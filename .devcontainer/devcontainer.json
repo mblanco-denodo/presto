@@ -1,0 +1,9 @@
+ {
+      "name": "Ubuntu 22.04 Dev Container",
+      "dockerFile": "Dockerfile",
+      "build": {
+        "dockerfile": "Dockerfile"
+      },
+      "image": "ubuntu:22.04"
+    }
+
