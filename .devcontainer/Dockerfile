@@ -20,8 +20,6 @@ ENV TZ=${tz}
 WORKDIR presto-native-execution
 RUN make submodules
 RUN mkdir -p /scripts /velox/scripts
-COPY scripts /scripts
-COPY velox/scripts /velox/scripts
 # setup-adapters.sh does not install rpm needed for minio install.
 RUN mkdir build && \
     (cd build && ../scripts/setup-ubuntu.sh && \
