@@ -17,7 +17,8 @@ ENV SUDO=" "
 # are required to avoid tzdata installation
 # to prompt for region selection.
 ENV TZ=${tz}
-RUN cd presto-native-execution && make submodules
+WORKDIR presto-native-execution
+RUN make submodules
 RUN mkdir -p /scripts /velox/scripts
 COPY scripts /scripts
 COPY velox/scripts /velox/scripts
@@ -29,4 +30,4 @@ RUN mkdir build && \
                  ../scripts/setup-adapters.sh ) && \
     rm -rf build
 
-RUN cd ..
+WORKDIR cd ..
