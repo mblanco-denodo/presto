@@ -7,7 +7,8 @@ RUN apt-get update && apt-get install -y \
 	wget \
 	unzip \
 	tar \
-	openjdk-8-jdk
+	openjdk-8-jdk \
+	make
 # Set a default timezone, can be overriden via ARG
 ARG tz="America/New_York"
 ARG DEBIAN_FRONTEND="noninteractive"
