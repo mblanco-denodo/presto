@@ -2,7 +2,7 @@
 	"name": "Prestissimo Dev Container",
 	"build": {
 		"dockerfile": "Dockerfile"
-	}
-	"workspaceMount": "source=${localWorkspaceFolder}/presto-native-execution,target=/presto-native-execution,type=bind",
-	"workspaceFolder": "/presto-native-execution"
+	},
+	"workspaceMount": "source=${localWorkspaceFolder}/..,target=/presto,type=bind",
+	"workspaceFolder": "/presto/presto-native-execution"
 }
