@@ -127,44 +127,63 @@ public final class DeltaExpressionUtils
             implements CloseableIterator<Row>
     {
         private final CloseableIterator<FilteredColumnarBatch> inputIterator;
-        private Row nextItem;
+        private FilteredColumnarBatch nextBatch;
+        private Row nextRow;
         private boolean rowsRemaining;
         private CloseableIterator<Row> row;
 
         public AllFilesIterator(CloseableIterator<FilteredColumnarBatch> inputIterator)
         {
             this.inputIterator = inputIterator;
+            this.nextBatch = null;
+            this.nextRow = null;
         }
+
         @Override
         public boolean hasNext()
         {
-            if (nextItem != null) {
+            if (this.nextRow != null) {
                 return true;
             }
 
-            if (!rowsRemaining) {
-                if (!inputIterator.hasNext()) {
-                    return false;
+            if (!this.rowsRemaining) {
+                while (this.inputIterator.hasNext()) {
+                    // get new batch
+                    this.nextBatch = this.inputIterator.next();
+                    this.row = nextBatch.getRows();
+                    this.rowsRemaining = false;
+                    if (this.row.hasNext()) {
+                        // it the batch has rows to return, we break out of the loop
+                        this.nextRow = this.row.next();
+                        this.rowsRemaining = true;
+                        break;
+                    } else {
+                        // it the batch is empty we close the row iterator and we test
+                        // the next batch
+                        try {
+                            this.row.close();
+                        }
+                        catch (IOException e) {
+                            throw new GenericInternalException("Could not close row batch", e);
+                        }
+                    }
                 }
-                FilteredColumnarBatch nextFile = inputIterator.next();
-                row = nextFile.getRows();
-            }
-            Row nextRow;
-            rowsRemaining = false;
-            if (row.hasNext()) {
-                nextRow = row.next();
-                nextItem = nextRow;
-                rowsRemaining = true;
-            }
-            if (!rowsRemaining) {
-                try {
-                    row.close();
+            } else {
+                rowsRemaining = false;
+                if (row.hasNext()) {
+                    nextRow = row.next();
+                    rowsRemaining = true;
                 }
-                catch (IOException e) {
-                    throw new GenericInternalException("Could not close row batch", e);
+                if (!rowsRemaining) {
+                    try {
+                        row.close();
+                    }
+                    catch (IOException e) {
+                        throw new GenericInternalException("Could not close row batch", e);
+                    }
                 }
             }
-            return nextItem != null;
+            return this.nextRow != null;
         }
 
         @Override
@@ -173,8 +192,8 @@ public final class DeltaExpressionUtils
             if (!hasNext()) {
                 throw new NoSuchElementException("There are no more files");
             }
-            Row toReturn = nextItem;
-            nextItem = null;
+            Row toReturn = nextRow;
+            nextRow = null;
             return toReturn;
         }
 
