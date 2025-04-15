@@ -127,7 +127,6 @@ public final class DeltaExpressionUtils
             implements CloseableIterator<Row>
     {
         private final CloseableIterator<FilteredColumnarBatch> inputIterator;
-        private FilteredColumnarBatch nextBatch;
         private Row nextRow;
         private boolean rowsRemaining;
         private CloseableIterator<Row> row;
@@ -135,8 +134,6 @@ public final class DeltaExpressionUtils
         public AllFilesIterator(CloseableIterator<FilteredColumnarBatch> inputIterator)
         {
             this.inputIterator = inputIterator;
-            this.nextBatch = null;
-            this.nextRow = null;
         }
 
         @Override
@@ -149,7 +146,7 @@ public final class DeltaExpressionUtils
             if (!this.rowsRemaining) {
                 while (this.inputIterator.hasNext()) {
                     // get new batch
-                    this.nextBatch = this.inputIterator.next();
+                    FilteredColumnarBatch nextBatch = this.inputIterator.next();
                     this.row = nextBatch.getRows();
                     this.rowsRemaining = false;
                     if (this.row.hasNext()) {
@@ -263,30 +260,51 @@ public final class DeltaExpressionUtils
                 return true;
             }
 
-            if (!rowsRemaining) {
-                if (!inputIterator.hasNext()) {
-                    return false;
+            if (rowsRemaining) {
+                Row nextRow;
+                rowsRemaining = false;
+                while (row.hasNext()) {
+                    nextRow = row.next();
+                    if (evaluatePartitionPredicate(partitionPredicate, partitionColumns, typeManager,
+                            nextRow)) {
+                        nextItem = nextRow;
+                        rowsRemaining = true;
+                        break;
+                    }
                 }
-                FilteredColumnarBatch nextFile = inputIterator.next();
-                row = nextFile.getRows();
-            }
-            Row nextRow;
-            rowsRemaining = false;
-            while (row.hasNext()) {
-                nextRow = row.next();
-                if (evaluatePartitionPredicate(partitionPredicate, partitionColumns, typeManager,
-                        nextRow)) {
-                    nextItem = nextRow;
-                    rowsRemaining = true;
-                    break;
+                if (!rowsRemaining) {
+                    try {
+                        row.close();
+                    }
+                    catch (IOException e) {
+                        throw new GenericInternalException("Cloud not close row batch", e);
+                    }
                 }
-            }
-            if (!rowsRemaining) {
-                try {
-                    row.close();
-                }
-                catch (IOException e) {
-                    throw new GenericInternalException("Cloud not close row batch", e);
+            } else {
+                while (inputIterator.hasNext()) {
+                    FilteredColumnarBatch nextFile = inputIterator.next();
+                    row = nextFile.getRows();
+                    Row nextRow;
+                    rowsRemaining = false;
+                    while (row.hasNext()) {
+                        nextRow = row.next();
+                        if (evaluatePartitionPredicate(partitionPredicate, partitionColumns, typeManager,
+                                nextRow)) {
+                            nextItem = nextRow;
+                            rowsRemaining = true;
+                            break;
+                        }
+                    }
+                    if (rowsRemaining) {
+                        break;
+                    } else {
+                        try {
+                            row.close();
+                        }
+                        catch (IOException e) {
+                            throw new GenericInternalException("Cloud not close row batch", e);
+                        }
+                    }
                 }
             }
             return nextItem != null;
