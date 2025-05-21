@@ -1,0 +1,29 @@
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.0.0 http://maven.apache.org/xsd/assembly-2.0.0.xsd">
+    <id>presto-denodo-arrow-flight</id>
+    <includeBaseDirectory>true</includeBaseDirectory>
+
+	<fileSets>
+        <fileSet>
+        <directory>${project.build.directory}/presto-denodo-arrow-flight-${project.version}</directory>
+        <outputDirectory>/</outputDirectory>
+            <excludes>
+                <exclude>animal-sniffer-annotations-1.14.jar</exclude>
+                <exclude>aopalliance-1.0.jar</exclude>
+                <exclude>cglib-nodep-3.2.5.jar</exclude>
+                <exclude>checker-qual-3.37.0.jar</exclude>
+                <exclude>error_prone_annotations-2.1.3.jar</exclude>
+                <exclude>j2objc-annotations-1.1.jar</exclude>
+                <exclude>jcl-over-slf4j-1.7.32.jar</exclude>
+                <exclude>jsr305-3.0.2.jar</exclude>
+                <exclude>log-manager-0.207.jar</exclude>
+                <exclude>log4j-over-slf4j-1.7.32.jar</exclude>
+                <exclude>logback-core-1.2.3.jar</exclude>
+                <exclude>slf4j-api-1.7.32.jar</exclude>
+                <exclude>slf4j-jdk14-1.7.32.jar</exclude>
+            </excludes>
+        </fileSet>
+
+	</fileSets>
+
+</assembly>
