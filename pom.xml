@@ -113,6 +113,8 @@
     </properties>
 
     <modules>
+        <module>presto-denodo</module>
+        <module>presto-denodo-arrow-flight</module>
         <module>presto-atop</module>
         <module>presto-spi</module>
         <module>presto-analyzer</module>
