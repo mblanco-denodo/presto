@@ -27,9 +27,12 @@ RUN dnf install -y git \
     hostname
 
 # download git repo
-RUN git clone https://github.com/prestodb/presto.git /source
+RUN git clone https://github.com/mblanco-denodo/presto.git /source
 #
 WORKDIR /source/presto-native-execution
+
+## change to dev branch
+RUN git checkout dev
 
 ## Load Velox submodule
 RUN make submodules
@@ -40,3 +43,7 @@ RUN mkdir $INSTALL_PREFIX && \
     ./velox/scripts/setup-adapters.sh && \
     ./scripts/setup-adapters.sh && \
     ./velox/scripts/setup-centos9.sh install_clang15
+
+WORKDIR /
+
+RUN rm -rf /source
