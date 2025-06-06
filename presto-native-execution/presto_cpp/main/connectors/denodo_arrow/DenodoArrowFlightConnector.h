@@ -26,7 +26,7 @@ public:
      std::shared_ptr<const velox::config::ConfigBase> config,
      const char* authenticatorName = nullptr)
      : ArrowFlightConnector(id, config, authenticatorName),
-       flightConfig_(std::make_shared<ArrowFlightConfig>(config)),
+       flightConfig_(std::make_shared<DenodoArrowFlightConfig>(config)),
        clientOpts_(initClientOpts(flightConfig_)),
        authenticator_(getAuthenticatorFactory(
                           authenticatorName
@@ -39,9 +39,9 @@ public:
 
 private:
   static std::shared_ptr<arrow::flight::FlightClientOptions> initClientOpts(
-      const std::shared_ptr<ArrowFlightConfig>& config);
+      const std::shared_ptr<DenodoArrowFlightConfig>& config);
 
-  const std::shared_ptr<ArrowFlightConfig> flightConfig_;
+  const std::shared_ptr<DenodoArrowFlightConfig> flightConfig_;
   const std::shared_ptr<arrow::flight::FlightClientOptions> clientOpts_;
   const std::shared_ptr<Authenticator> authenticator_;
 };

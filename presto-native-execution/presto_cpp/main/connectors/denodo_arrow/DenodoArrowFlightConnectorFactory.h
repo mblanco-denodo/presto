@@ -7,9 +7,7 @@ namespace facebook::presto {
 class DenodoArrowFlightConnectorFactory final :
 public velox::connector::ConnectorFactory {
 public:
-  static constexpr const char* keyConnectorName = "denodo-arrow";
-
-  DenodoArrowFlightConnectorFactory() : ConnectorFactory(keyConnectorName) {}
+  DenodoArrowFlightConnectorFactory() : ConnectorFactory(kConnectorName) {}
 
   explicit DenodoArrowFlightConnectorFactory(
       const char* name,
@@ -25,7 +23,10 @@ public:
         id, config, authenticatorName_);
   }
 
+  static std::string keyConnectorName();
+
 private:
+  static constexpr const char* kConnectorName = "denodo-arrow";
   const char* authenticatorName_{nullptr};
 };
 } // namespace facebook::presto

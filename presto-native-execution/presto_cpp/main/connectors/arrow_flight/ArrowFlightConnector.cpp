@@ -15,6 +15,7 @@
 #include <arrow/c/abi.h>
 #include <arrow/c/bridge.h>
 #include <arrow/flight/api.h>
+#include <boost/asio/query.hpp>
 #include <folly/base64.h>
 #include <utility>
 #include "presto_cpp/main/common/ConfigReader.h"
@@ -159,6 +160,10 @@ void ArrowFlightDataSource::addSplit(std::shared_ptr<ConnectorSplit> split) {
       auto client, arrow::flight::FlightClient::Connect(loc, *clientOpts_));
 
   CallOptionsAddHeaders callOptsAddHeaders{};
+  callOptsAddHeaders.AddHeader("authorization", "Basic YWRtaW46YWRtaW4=");
+  callOptsAddHeaders.AddHeader("x-forwarded-user-agent", "Denodo-Embedded-MPP");
+  callOptsAddHeaders.AddHeader("mpp-query-id", connectorQueryCtx_->queryId());
+  LOG(INFO) << "Authenticating with query-Id" << connectorQueryCtx_->queryId();
   authenticator_->authenticateClient(
       client, connectorQueryCtx_->sessionProperties(), callOptsAddHeaders);
 
