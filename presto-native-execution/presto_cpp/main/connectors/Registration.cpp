@@ -19,6 +19,8 @@
 #include "presto_cpp/main/connectors/arrow_flight/ArrowPrestoToVeloxConnector.h"
 #endif
 
+#include "denodo_arrow/DenodoArrowFlightConnectorFactory.h"
+#include "denodo_arrow/DenodoArrowPrestoToVeloxConnector.h"
 #include "velox/connectors/hive/HiveConnector.h"
 #include "velox/connectors/tpch/TpchConnector.h"
 
@@ -59,6 +61,12 @@ void registerConnectorFactories() {
     velox::connector::registerConnectorFactory(
         std::make_shared<ArrowFlightConnectorFactory>());
   }
+  // denodo arrow registration
+  if (!velox::connector::hasConnectorFactory(
+    DenodoArrowFlightConnectorFactory::keyConnectorName())) {
+    velox::connector::registerConnectorFactory(
+      std::make_shared<DenodoArrowFlightConnectorFactory>());
+  }
 #endif
 }
 } // namespace
@@ -90,6 +98,8 @@ void registerConnectors() {
 #ifdef PRESTO_ENABLE_ARROW_FLIGHT_CONNECTOR
   registerPrestoToVeloxConnector(std::make_unique<ArrowPrestoToVeloxConnector>(
       ArrowFlightConnectorFactory::kArrowFlightConnectorName));
+  registerPrestoToVeloxConnector(std::make_unique<DenodoArrowPrestoToVeloxConnector>(
+      DenodoArrowFlightConnectorFactory::keyConnectorName()));
 #endif
 }
 } // namespace facebook::presto
