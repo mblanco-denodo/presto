@@ -27,8 +27,13 @@ import com.facebook.presto.spi.SchemaTableName;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.protobuf.Any;
-import com.google.protobuf.InvalidProtocolBufferException;
-import org.apache.arrow.flight.*;
+import com.google.protobuf.ByteString;
+import org.apache.arrow.flight.CallOption;
+import org.apache.arrow.flight.CallOptions;
+import org.apache.arrow.flight.FlightClient;
+import org.apache.arrow.flight.FlightDescriptor;
+import org.apache.arrow.flight.FlightInfo;
+import org.apache.arrow.flight.FlightStream;
 import org.apache.arrow.flight.grpc.CredentialCallOption;
 import org.apache.arrow.flight.sql.impl.FlightSql;
 import org.apache.arrow.memory.BufferAllocator;
@@ -37,7 +42,11 @@ import org.apache.arrow.vector.VectorSchemaRoot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Objects.requireNonNull;
@@ -61,7 +70,7 @@ public class DenodoArrowFlightClientHandler
         super(allocator, config);
         this.config = config;
         this.requestCodec = requireNonNull(requestCodec, "requestCodec is null");
-        this.responseCodec= requireNonNull(responseCodec, "responseCodec is null");
+        this.responseCodec = requireNonNull(responseCodec, "responseCodec is null");
     }
 
     @Override
@@ -80,14 +89,13 @@ public class DenodoArrowFlightClientHandler
     @Override
     public List<String> listSchemaNames(ConnectorSession session)
     {
-        try (FlightClient client = createFlightClient())
-        {
+        try (FlightClient client = createFlightClient()) {
             CallOption[] callOptions = getCallOptions(session);
             List<String> schemas = new ArrayList<>(0);
             FlightSql.CommandGetDbSchemas commandGetDbSchemas = FlightSql.CommandGetDbSchemas.getDefaultInstance();
             FlightDescriptor descriptor = FlightDescriptor.command(Any.pack(commandGetDbSchemas).toByteArray());
             FlightInfo info = client.getInfo(descriptor, callOptions);
-            info.getEndpoints().forEach( endpoint -> {
+            info.getEndpoints().forEach(endpoint -> {
                 try (FlightStream stream = client.getStream(endpoint.getTicket(), callOptions)) {
                     while (stream.next()) {
                         VectorSchemaRoot root = stream.getRoot();
@@ -116,8 +124,7 @@ public class DenodoArrowFlightClientHandler
         if (!schemaName.isPresent()) {
             throw new DenodoArrowFlightRuntimeException("Cannot list tables for empty schema");
         }
-        try (FlightClient client = createFlightClient())
-        {
+        try (FlightClient client = createFlightClient()) {
             CallOption[] callOptions = getCallOptions(session);
             List<SchemaTableName> tables = new ArrayList<>(0);
             FlightSql.CommandGetTables commandGetTables = FlightSql.CommandGetTables
@@ -128,7 +135,7 @@ public class DenodoArrowFlightClientHandler
 
             FlightDescriptor descriptor = FlightDescriptor.command(Any.pack(commandGetTables).toByteArray());
             FlightInfo info = client.getInfo(descriptor, callOptions);
-            info.getEndpoints().forEach( endpoint -> {
+            info.getEndpoints().forEach(endpoint -> {
                 try (FlightStream stream = client.getStream(endpoint.getTicket(), callOptions)) {
                     while (stream.next()) {
                         VectorSchemaRoot root = stream.getRoot();
@@ -173,37 +180,11 @@ public class DenodoArrowFlightClientHandler
                 tableLayoutHandle.getColumnHandles(), ImmutableMap.of(),
                 tableLayoutHandle.getTupleDomain());
         FlightSql.CommandStatementQuery request = FlightSql.CommandStatementQuery
-                .newBuilder().setQuery(query).build();
+                .newBuilder()
+                .setQuery(query)
+                .setTransactionId(ByteString.copyFrom(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8)))
+                .build();
         log.error("executing query: {}", query);
         return FlightDescriptor.command(Any.pack(request).toByteArray());
-    }
-
-    //@Override
-    //public FlightInfo getFlightInfoForTableScan(ArrowTableLayoutHandle tableLayoutHandle, ConnectorSession session)
-    //{
-    //    FlightDescriptor flightDescriptor = getFlightDescriptorForTableScan(tableLayoutHandle);
-    //    FlightDescriptor descriptor = getActionResult(flightDescriptor, session);
-    //    FlightInfo info = getFlightInfo(descriptor, session);
-    //    return info;
-    //}
-
-    private FlightDescriptor getActionResult(FlightDescriptor flightDescriptor, ConnectorSession session)
-    {
-        try (FlightClient client = createFlightClient()) {
-            Action action = new Action("CreatePreparedStatement", flightDescriptor.getCommand());
-            Iterator<Result> results = client.doAction(action, getCallOptions(session));
-            if (results.hasNext()) {
-                Result result = results.next();
-                Any anyResult = Any.parseFrom(result.getBody());
-                FlightSql.ActionCreatePreparedStatementResult preparedStatementResult =
-                        anyResult.unpack(FlightSql.ActionCreatePreparedStatementResult.class);
-                byte[] preparedStatementHandle = preparedStatementResult.getPreparedStatementHandle().toByteArray();
-                return FlightDescriptor.command(preparedStatementHandle);
-            }
-            throw new DenodoArrowFlightRuntimeException("Cannot create prepared statement");
-        }
-        catch (InterruptedException | InvalidProtocolBufferException e) {
-            throw new DenodoArrowFlightRuntimeException("", e);
-        }
     }
 }

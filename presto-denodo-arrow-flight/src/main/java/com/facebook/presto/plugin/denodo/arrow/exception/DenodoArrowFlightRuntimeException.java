@@ -18,12 +18,13 @@ public class DenodoArrowFlightRuntimeException
 {
     private static final long serialVersionUID = -6448705430789859448L;
     private final String message;
-    private Exception cause;
+    private final Exception cause;
 
     public DenodoArrowFlightRuntimeException(String message)
     {
         super(message);
         this.message = message;
+        this.cause = null;
     }
 
     public DenodoArrowFlightRuntimeException(String message, Exception cause)
