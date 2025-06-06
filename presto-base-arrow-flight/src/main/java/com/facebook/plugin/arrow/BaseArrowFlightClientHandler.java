@@ -16,13 +16,7 @@ package com.facebook.plugin.arrow;
 import com.facebook.airlift.log.Logger;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.SchemaTableName;
-import org.apache.arrow.flight.CallOption;
-import org.apache.arrow.flight.FlightClient;
-import org.apache.arrow.flight.FlightDescriptor;
-import org.apache.arrow.flight.FlightEndpoint;
-import org.apache.arrow.flight.FlightInfo;
-import org.apache.arrow.flight.FlightRuntimeException;
-import org.apache.arrow.flight.Location;
+import org.apache.arrow.flight.*;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.types.pojo.Schema;
 
