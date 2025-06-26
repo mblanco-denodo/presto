@@ -50,7 +50,9 @@ target_link_libraries(
   presto_common
   presto_exception
   presto_function_metadata
+        "-Wl,--whole-archive"
   presto_connectors
+        "-Wl,--no-whole-archive"
   presto_http
   presto_operators
   presto_velox_plan_conversion
