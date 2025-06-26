@@ -11,7 +11,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "presto_cpp/main/connectors/denodo_arrow/DenodoArrowFlightConnectorFactory.h"
+#pragma once
+
+#include <arrow/flight/client.h>
+#include <arrow/flight/middleware.h>
 
 namespace facebook::presto {
-} // namespace facebook::presto
+// Wrapper for CallOptions which does not add any member variables,
+// but provides a write-only interface for adding call headers.
+class CallOptionsAddHeaders : public arrow::flight::FlightCallOptions,
+                              public arrow::flight::AddCallHeaders {
+public:
+  void AddHeader(const std::string& key, const std::string& value) override;
+};
+}

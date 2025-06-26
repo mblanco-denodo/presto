@@ -16,10 +16,9 @@ if(PRESTO_ENABLE_ARROW_FLIGHT_CONNECTOR)
   add_subdirectory(arrow_flight)
   target_compile_definitions(presto_connectors
                              PUBLIC PRESTO_ENABLE_ARROW_FLIGHT_CONNECTOR)
-  target_link_libraries(presto_connectors presto_flight_connector)
   # we also link the denodo arrow connector
   add_subdirectory(denodo_arrow)
-  target_link_libraries(presto_connectors denodo_arrow_flight_connector)
+  target_link_libraries(presto_connectors presto_flight_connector denodo_arrow_flight_connector)
 endif()
 
 target_link_libraries(presto_connectors presto_velox_expr_conversion

@@ -11,7 +11,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "presto_cpp/main/connectors/denodo_arrow/DenodoArrowFlightConnectorFactory.h"
+#include "presto_cpp/main/connectors/denodo_arrow/DenodoCallOptions.h"
 
 namespace facebook::presto {
+  void CallOptionsAddHeaders::AddHeader(
+    const std::string& key, const std::string& value) {
+    headers.emplace_back(key, value);
+  }
 } // namespace facebook::presto

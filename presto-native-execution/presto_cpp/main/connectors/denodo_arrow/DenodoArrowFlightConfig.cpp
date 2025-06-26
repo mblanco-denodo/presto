@@ -15,21 +15,52 @@
 #include "presto_cpp/main/connectors/denodo_arrow/DenodoArrowFlightConfig.h"
 
 namespace facebook::presto {
-  std::optional<std::string> DenodoArrowFlightConfig::connectionUsername()
-      const {
-    return std::optional<std::string>(
-      m_config->get<std::string>(keyConnectionUsername));
-  }
+std::optional<std::string> DenodoArrowFlightConfig::connectionUsername()
+    const {
+  return std::optional<std::string>(
+    m_config->get<std::string>(keyConnectionUsername));
+}
 
-  std::optional<std::string> DenodoArrowFlightConfig::connectionPassword()
-      const {
-    return std::optional<std::string>(
-      m_config->get<std::string>(keyConnectionPassword));
-  }
+std::optional<std::string> DenodoArrowFlightConfig::connectionUsername(
+    const velox::config::ConfigBase* configBase) {
+  return std::optional<std::string>(
+    configBase->get<std::string>(keyConnectionUsername));
+}
 
-  std::optional<std::string> DenodoArrowFlightConfig::connectionUserAgent()
-      const {
-    return std::optional<std::string>(
-      m_config->get<std::string>(keyConnectionUserAgent));
-  }
+
+std::optional<std::string> DenodoArrowFlightConfig::connectionPassword()
+    const {
+  return std::optional<std::string>(
+    m_config->get<std::string>(keyConnectionPassword));
+}
+
+std::optional<std::string> DenodoArrowFlightConfig::connectionPassword(
+    const velox::config::ConfigBase* configBase) {
+  return std::optional<std::string>(
+    configBase->get<std::string>(keyConnectionPassword));
+}
+
+std::optional<std::string> DenodoArrowFlightConfig::connectionUserAgent()
+    const {
+  return std::optional<std::string>(
+    m_config->get<std::string>(keyConnectionUserAgent));
+}
+
+std::optional<std::string> DenodoArrowFlightConfig::connectionUserAgent(
+    const velox::config::ConfigBase* configBase) {
+  return std::optional<std::string>(
+    configBase->get<std::string>(keyConnectionUserAgent));
+}
+
+std::optional<std::string> DenodoArrowFlightConfig::connectionAuthType()
+    const {
+  return std::optional<std::string>(
+    m_config->get<std::string>(keyConnectionAuthType));
+}
+
+std::optional<std::string> DenodoArrowFlightConfig::connectionAuthType(
+    const velox::config::ConfigBase* configBase) {
+  return std::optional<std::string>(
+    configBase->get<std::string>(keyConnectionAuthType));
+}
 } // namespace facebook::presto

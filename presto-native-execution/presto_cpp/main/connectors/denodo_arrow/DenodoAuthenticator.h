@@ -11,7 +11,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "presto_cpp/main/connectors/denodo_arrow/DenodoArrowFlightConnectorFactory.h"
+#pragma once
+
+#include "presto_cpp/main/connectors/arrow_flight/auth/Authenticator.h"
+#include "velox/connectors/Connector.h"
 
 namespace facebook::presto {
-} // namespace facebook::presto
+class DenodoAuthenticator : public Authenticator {
+public:
+  virtual ~DenodoAuthenticator() = default;
+
+  virtual const velox::connector::ConnectorQueryCtx* getQueryContext() const {
+    return kConnectorQueryCtx;
+  }
+
+  virtual void setQueryContext(const velox::connector::ConnectorQueryCtx* context) {
+    kConnectorQueryCtx = context;
+  }
+
+private:
+  const velox::connector::ConnectorQueryCtx* kConnectorQueryCtx{nullptr};
+};
+}

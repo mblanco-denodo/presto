@@ -17,10 +17,11 @@
 #ifdef PRESTO_ENABLE_ARROW_FLIGHT_CONNECTOR
 #include "presto_cpp/main/connectors/arrow_flight/ArrowFlightConnector.h"
 #include "presto_cpp/main/connectors/arrow_flight/ArrowPrestoToVeloxConnector.h"
+#include "presto_cpp/main/connectors/denodo_arrow/DenodoAuthenticatorFactory.h"
+#include "presto_cpp/main/connectors/denodo_arrow/DenodoArrowFlightConnectorFactory.h"
+#include "presto_cpp/main/connectors/denodo_arrow/DenodoArrowPrestoToVeloxConnector.h"
 #endif
 
-#include "denodo_arrow/DenodoArrowFlightConnectorFactory.h"
-#include "denodo_arrow/DenodoArrowPrestoToVeloxConnector.h"
 #include "velox/connectors/hive/HiveConnector.h"
 #include "velox/connectors/tpch/TpchConnector.h"
 
@@ -65,7 +66,10 @@ void registerConnectorFactories() {
   if (!velox::connector::hasConnectorFactory(
     DenodoArrowFlightConnectorFactory::keyConnectorName())) {
     velox::connector::registerConnectorFactory(
-      std::make_shared<DenodoArrowFlightConnectorFactory>());
+      std::make_shared<DenodoArrowFlightConnectorFactory>(
+        DenodoArrowFlightConnectorFactory::keyConnectorName(),
+        DenodoAuthenticatorFactory::authenticatorName()));
+      //std::make_shared<DenodoArrowFlightConnectorFactory>());
   }
 #endif
 }
