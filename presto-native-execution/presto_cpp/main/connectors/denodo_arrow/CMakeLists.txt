@@ -12,12 +12,12 @@
 find_package(Arrow REQUIRED CONFIG)
 find_package(ArrowFlight REQUIRED)
 
-#target_link_libraries(presto_flight_connector_utils INTERFACE velox_exception)
-
+add_definitions(-DDEBUG)
 add_library(
         denodo_arrow_flight_connector OBJECT
         DenodoArrowFlightConnector.cpp DenodoArrowPrestoToVeloxConnector.cpp DenodoArrowFlightConnectorFactory.cpp
-        DenodoArrowFlightConfig.cpp)
+        DenodoArrowFlightConfig.cpp DenodoAuthenticatorFactory.cpp DenodoBasicAuthenticator.cpp DenodoCallOptions.cpp
+        DenodoArrowFlightDataSource.cpp)
 
 target_compile_definitions(denodo_arrow_flight_connector
         PUBLIC PRESTO_ENABLE_ARROW_FLIGHT_CONNECTOR)
