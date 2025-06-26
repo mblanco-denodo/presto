@@ -23,16 +23,24 @@ public:
      std::shared_ptr<const velox::config::ConfigBase> config)
      : ArrowFlightConfig(config), m_config{config} {}
 
+  [[nodiscard]] std::optional<std::string> connectionUsername() const;
+  [[nodiscard]] static std::optional<std::string> connectionUsername(
+    const velox::config::ConfigBase* configBase);
+  [[nodiscard]] std::optional<std::string> connectionPassword() const;
+  [[nodiscard]] static std::optional<std::string> connectionPassword(
+    const velox::config::ConfigBase* configBase);
+  [[nodiscard]] std::optional<std::string> connectionUserAgent() const;
+  [[nodiscard]] static std::optional<std::string> connectionUserAgent(
+    const velox::config::ConfigBase* configBase);
+  [[nodiscard]] std::optional<std::string> connectionAuthType() const;
+  [[nodiscard]] static std::optional<std::string> connectionAuthType(
+    const velox::config::ConfigBase* configBase);
+
+ private:
   static constexpr const char* keyConnectionUsername = "connection.username";
   static constexpr const char* keyConnectionPassword = "connection.password";
   static constexpr const char* keyConnectionUserAgent = "connection.user-agent";
-
-  [[nodiscard]] std::optional<std::string> connectionUsername() const;
-  [[nodiscard]] std::optional<std::string> connectionPassword() const;
-  [[nodiscard]] std::optional<std::string> connectionUserAgent() const;
-
- private:
+  static constexpr const char* keyConnectionAuthType = "connection.auth-type";
   const std::shared_ptr<const velox::config::ConfigBase> m_config;
 };
-
 } // namespace facebook::presto

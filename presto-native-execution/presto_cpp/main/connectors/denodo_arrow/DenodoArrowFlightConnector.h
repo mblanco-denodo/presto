@@ -32,10 +32,16 @@ public:
                           authenticatorName
                               ? authenticatorName
                               : flightConfig_->authenticatorName())
-                          ->newAuthenticator(config))
-  {
-    // constructor code: none for now
-  }
+                          ->newAuthenticator(config)) {}
+
+  std::unique_ptr<velox::connector::DataSource> createDataSource(
+      const velox::RowTypePtr& outputType,
+      const std::shared_ptr<velox::connector::ConnectorTableHandle>&
+          tableHandle,
+      const std::unordered_map<
+          std::string,
+          std::shared_ptr<velox::connector::ColumnHandle>>& columnHandles,
+      velox::connector::ConnectorQueryCtx* connectorQueryCtx) override;
 
 private:
   static std::shared_ptr<arrow::flight::FlightClientOptions> initClientOpts(
