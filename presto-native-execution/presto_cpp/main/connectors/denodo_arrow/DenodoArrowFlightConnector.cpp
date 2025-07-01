@@ -33,6 +33,8 @@ DenodoArrowFlightConnector::initClientOpts(
         (std::istreambuf_iterator<char>()));
     clientOpts->tls_root_certs = cert;
   }
+  // TODO
+  // verify auth properties here
 
   return clientOpts;
 }

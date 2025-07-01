@@ -18,15 +18,10 @@
 #include "velox/connectors/Connector.h"
 
 namespace facebook::presto {
-
-#define REGISTER_DENODO_AUTH_FACTORY(factory)                                \
-namespace {                                                                  \
-static bool FB_ANONYMOUS_VARIABLE(g_ConnectorFactory) =                      \
-::facebook::presto::registerAuthenticatorFactory((factory)); \
-}
-
 class DenodoAuthenticatorFactory final : public AuthenticatorFactory {
 public:
+  virtual ~DenodoAuthenticatorFactory() = default;
+
   DenodoAuthenticatorFactory() : AuthenticatorFactory{kAuthenticatorName} {}
 
   explicit DenodoAuthenticatorFactory(const std::string_view name)

@@ -21,7 +21,6 @@ namespace arrow {
 class RecordBatch;
 namespace flight {
 class FlightClientOptions;
-class FlightStreamReader;
 class Location;
 } // namespace flight
 } // namespace arrow
@@ -41,21 +40,8 @@ public:
   void addSplit(
       std::shared_ptr<velox::connector::ConnectorSplit> split) override;
 private:
-  /// Convert an Arrow record batch to Velox RowVector.
-  /// Process only those columns that are present in outputType_.
-  velox::RowVectorPtr projectOutputColumns(
-      const std::shared_ptr<arrow::RecordBatch>& input);
-
-  velox::RowTypePtr outputType_;
-  std::vector<std::string> columnMapping_;
-  std::unique_ptr<arrow::flight::FlightStreamReader> currentReader_;
-  uint64_t completedRows_ = 0;
-  uint64_t completedBytes_ = 0;
   std::shared_ptr<Authenticator> authenticator_;
-  const velox::connector::ConnectorQueryCtx* const connectorQueryCtx_;
-  const std::shared_ptr<ArrowFlightConfig> flightConfig_;
-  const std::shared_ptr<arrow::flight::FlightClientOptions> clientOpts_;
-  const std::shared_ptr<arrow::flight::Location> defaultLocation_;
+  const velox::connector::ConnectorQueryCtx* connectorQueryCtx_;
 };
 } // namespace facebook::presto
 

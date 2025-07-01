@@ -14,4 +14,13 @@
 #include "presto_cpp/main/connectors/denodo_arrow/DenodoArrowFlightConnectorFactory.h"
 
 namespace facebook::presto {
+std::shared_ptr<velox::connector::Connector>
+  DenodoArrowFlightConnectorFactory::newConnector(
+    const std::string& id,
+    std::shared_ptr<const velox::config::ConfigBase> config,
+    folly::Executor* ioExecutor,
+    folly::Executor* cpuExecutor) {
+  return std::make_shared<DenodoArrowFlightConnector>(
+      id, config, authenticatorName_);
+}
 } // namespace facebook::presto

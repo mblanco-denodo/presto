@@ -22,7 +22,7 @@ std::unique_ptr<velox::connector::ConnectorSplit>
 DenodoArrowPrestoToVeloxConnector::toVeloxSplit(
     const protocol::ConnectorId& catalogId,
     const protocol::ConnectorSplit* const connectorSplit,
-    const protocol::SplitContext* /*splitContext*/) const {
+    const protocol::SplitContext* splitContext) const {
   auto arrowSplit =
       dynamic_cast<const protocol::arrow_flight::ArrowSplit*>(connectorSplit);
   VELOX_CHECK_NOT_NULL(
@@ -34,7 +34,7 @@ DenodoArrowPrestoToVeloxConnector::toVeloxSplit(
 std::unique_ptr<velox::connector::ColumnHandle>
 DenodoArrowPrestoToVeloxConnector::toVeloxColumnHandle(
     const protocol::ColumnHandle* column,
-    const TypeParser& /*typeParser*/) const {
+    const TypeParser& typeParser) const {
   auto arrowColumn =
       dynamic_cast<const protocol::arrow_flight::ArrowColumnHandle*>(column);
   VELOX_CHECK_NOT_NULL(
@@ -46,8 +46,8 @@ DenodoArrowPrestoToVeloxConnector::toVeloxColumnHandle(
 std::unique_ptr<velox::connector::ConnectorTableHandle>
 DenodoArrowPrestoToVeloxConnector::toVeloxTableHandle(
     const protocol::TableHandle& tableHandle,
-    const VeloxExprConverter& /*exprConverter*/,
-    const TypeParser& /*typeParser*/,
+    const VeloxExprConverter& exprConverter,
+    const TypeParser& typeParser,
     std::unordered_map<
         std::string,
         std::shared_ptr<velox::connector::ColumnHandle>>& assignments) const {

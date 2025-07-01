@@ -17,33 +17,31 @@
 #include <arrow/flight/middleware.h>
 #include <folly/base64.h>
 
-
 namespace facebook::presto {
+
+DenodoBasicAuthenticator::DenodoBasicAuthenticator(
+    const std::string& username,
+    const std::string& password,
+    const std::string& userAgent) : DenodoAuthenticator() {
+  VELOX_CHECK_NOT_NULL(&username, "username is NULL");
+  VELOX_CHECK_NOT_NULL(&password, "password is NULL");
+  VELOX_CHECK_NOT_NULL(&userAgent, "user agent is NULL");
+  username_ = username;
+  password_ = password;
+  userAgent_ = userAgent;
+}
 
 void DenodoBasicAuthenticator::authenticateClient(
     std::unique_ptr<arrow::flight::FlightClient>& client,
     const velox::config::ConfigBase* sessionProperties,
     arrow::flight::AddCallHeaders& headerWriter) {
-  std::optional<std::string> username =
-    DenodoArrowFlightConfig::connectionUsername(sessionProperties);
-  if (!username.has_value()) {
-    // TODO throw RE
-  }
-  std::optional<std::string> password =
-    DenodoArrowFlightConfig::connectionPassword(sessionProperties);
-  if (!password.has_value()) {
-    // TODO throw RE
-  }
-  std::optional<std::string> userAgent =
-    DenodoArrowFlightConfig::connectionUserAgent(sessionProperties);
-  if (!userAgent.has_value()) {
-    // TODO throw RE
-  }
   const std::string base64EncodedUsernameAndPassword =
-      folly::base64Encode(username.value() + ':' + password.value());
+      folly::base64Encode(username_ + ':' + password_);
   headerWriter.AddHeader(authorizationKey,
     basicAuthenticationKey + base64EncodedUsernameAndPassword);
-  headerWriter.AddHeader(xForwardedUserAgentKey, userAgent.value());
+  headerWriter.AddHeader(xForwardedUserAgentKey, userAgent_);
   headerWriter.AddHeader(mppQueryIdKey, getQueryContext()->queryId());
+  LOG(INFO) << "Writing basic authentication headers for query: " <<
+    getQueryContext()->queryId();
 }
-}
+} // namespace facebook presto
