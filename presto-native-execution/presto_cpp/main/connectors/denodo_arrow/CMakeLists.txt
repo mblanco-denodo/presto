@@ -12,11 +12,10 @@
 find_package(Arrow REQUIRED CONFIG)
 find_package(ArrowFlight REQUIRED)
 
-add_definitions(-DDEBUG)
 add_library(
         denodo_arrow_flight_connector OBJECT
         DenodoArrowFlightConnector.cpp DenodoArrowPrestoToVeloxConnector.cpp DenodoArrowFlightConnectorFactory.cpp
-        DenodoArrowFlightConfig.cpp DenodoAuthenticatorFactory.cpp DenodoBasicAuthenticator.cpp DenodoCallOptions.cpp
+        DenodoArrowFlightConfig.cpp DenodoAuthenticatorFactory.cpp DenodoBasicAuthenticator.cpp
         DenodoArrowFlightDataSource.cpp)
 
 target_compile_definitions(denodo_arrow_flight_connector

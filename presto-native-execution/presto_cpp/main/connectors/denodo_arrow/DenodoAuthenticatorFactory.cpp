@@ -22,11 +22,13 @@ std::shared_ptr<Authenticator> DenodoAuthenticatorFactory::newAuthenticator(
     std::make_unique<DenodoArrowFlightConfig>(config);
   const std::optional<std::string> denodoArrowFlightAuthType =
     denodoArrowFlightConfig->connectionAuthType();
-  if (!denodoArrowFlightAuthType.has_value()) {
-    // TODO throw RE
-  }
+  VELOX_CHECK(denodoArrowFlightAuthType.has_value(),
+    "Authentication type is null");
   if (strcmp(basicAuth, denodoArrowFlightAuthType.value().c_str()) == 0) {
-    return std::make_shared<DenodoBasicAuthenticator>();
+    return std::make_shared<DenodoBasicAuthenticator>(
+      denodoArrowFlightConfig->connectionUsername().value(),
+      denodoArrowFlightConfig->connectionPassword().value(),
+      denodoArrowFlightConfig->connectionUserAgent().value());
   }
   if (strcmp(oauthAuth, denodoArrowFlightAuthType.value().c_str()) == 0) {
     // TODO
@@ -34,5 +36,5 @@ std::shared_ptr<Authenticator> DenodoAuthenticatorFactory::newAuthenticator(
   return nullptr;
 }
 
-REGISTER_DENODO_AUTH_FACTORY(std::make_shared<DenodoAuthenticatorFactory>());
+AFC_REGISTER_AUTH_FACTORY(std::make_shared<DenodoAuthenticatorFactory>());
 } // namespace facebook::presto
