@@ -31,10 +31,7 @@ public:
       const std::string& id,
       std::shared_ptr<const velox::config::ConfigBase> config,
       folly::Executor* ioExecutor,
-      folly::Executor* cpuExecutor) override {
-    return std::make_shared<DenodoArrowFlightConnector>(
-        id, config, authenticatorName_);
-  }
+      folly::Executor* cpuExecutor) override;
 
   static constexpr const char* keyConnectorName() {
     return kConnectorName;
