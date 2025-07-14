@@ -17,31 +17,42 @@
 #include <arrow/flight/middleware.h>
 #include <folly/base64.h>
 
+#include "DenodoArrowFlightSqlConnectionConstants.h"
+
 namespace facebook::presto {
 
 DenodoBasicAuthenticator::DenodoBasicAuthenticator(
-    const std::string& username,
-    const std::string& password,
-    const std::string& userAgent) : DenodoAuthenticator() {
-  VELOX_CHECK_NOT_NULL(&username, "username is NULL");
-  VELOX_CHECK_NOT_NULL(&password, "password is NULL");
-  VELOX_CHECK_NOT_NULL(&userAgent, "user agent is NULL");
-  username_ = username;
-  password_ = password;
-  userAgent_ = userAgent;
+    std::optional<std::string> username,
+    std::optional<std::string> password,
+    std::optional<std::string> userAgent,
+    std::optional<std::string> timePrecision,
+    std::optional<std::string> timestampPrecision,
+    const uint64_t queryTimeout,
+    const bool autocommit,
+    std::optional<std::string> workspace) :
+      DenodoAuthenticator (
+        userAgent,
+        timePrecision,
+        timestampPrecision,
+        queryTimeout,
+        autocommit,
+        workspace
+        ) {
+  VELOX_CHECK(username.has_value(), "missing 'username' value");
+  VELOX_CHECK(password.has_value(), "missing 'password' value");
+  username_ = username.value();
+  password_ = password.value();
 }
 
-void DenodoBasicAuthenticator::authenticateClient(
-    std::unique_ptr<arrow::flight::FlightClient>& client,
-    const velox::config::ConfigBase* sessionProperties,
+void DenodoBasicAuthenticator::populateAuthenticationCallHeaders(
     arrow::flight::AddCallHeaders& headerWriter) {
   const std::string base64EncodedUsernameAndPassword =
       folly::base64Encode(username_ + ':' + password_);
-  headerWriter.AddHeader(authorizationKey,
-    basicAuthenticationKey + base64EncodedUsernameAndPassword);
-  headerWriter.AddHeader(xForwardedUserAgentKey, userAgent_);
-  headerWriter.AddHeader(mppQueryIdKey, getQueryContext()->queryId());
-  LOG(INFO) << "Writing basic authentication headers for query: " <<
-    getQueryContext()->queryId();
+  headerWriter.AddHeader(
+    DenodoArrowFlightSqlConnectionConstants::authorizationKey,
+    DenodoArrowFlightSqlConnectionConstants::basicAuthenticationKey +
+    base64EncodedUsernameAndPassword);
+  LOG(INFO) << "Writing basic authentication headers for user '" << username_ <<
+    "' in query: '" << getQueryContext()->queryId() << "'";
 }
 } // namespace facebook presto

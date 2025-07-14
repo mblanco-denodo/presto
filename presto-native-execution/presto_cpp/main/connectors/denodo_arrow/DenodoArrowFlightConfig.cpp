@@ -21,23 +21,10 @@ std::optional<std::string> DenodoArrowFlightConfig::connectionUsername()
     m_config->get<std::string>(keyConnectionUsername));
 }
 
-std::optional<std::string> DenodoArrowFlightConfig::connectionUsername(
-    const velox::config::ConfigBase* configBase) {
-  return std::optional<std::string>(
-    configBase->get<std::string>(keyConnectionUsername));
-}
-
-
 std::optional<std::string> DenodoArrowFlightConfig::connectionPassword()
     const {
   return std::optional<std::string>(
     m_config->get<std::string>(keyConnectionPassword));
-}
-
-std::optional<std::string> DenodoArrowFlightConfig::connectionPassword(
-    const velox::config::ConfigBase* configBase) {
-  return std::optional<std::string>(
-    configBase->get<std::string>(keyConnectionPassword));
 }
 
 std::optional<std::string> DenodoArrowFlightConfig::connectionUserAgent()
@@ -46,21 +33,53 @@ std::optional<std::string> DenodoArrowFlightConfig::connectionUserAgent()
     m_config->get<std::string>(keyConnectionUserAgent));
 }
 
-std::optional<std::string> DenodoArrowFlightConfig::connectionUserAgent(
-    const velox::config::ConfigBase* configBase) {
-  return std::optional<std::string>(
-    configBase->get<std::string>(keyConnectionUserAgent));
-}
-
 std::optional<std::string> DenodoArrowFlightConfig::connectionAuthType()
     const {
   return std::optional<std::string>(
     m_config->get<std::string>(keyConnectionAuthType));
 }
 
-std::optional<std::string> DenodoArrowFlightConfig::connectionAuthType(
-    const velox::config::ConfigBase* configBase) {
-  return std::optional<std::string>(
-    configBase->get<std::string>(keyConnectionAuthType));
+uint64_t DenodoArrowFlightConfig::connectionQueryTimeout()
+    const {
+  auto connectionQueryTimeout = static_cast<std::optional<uint64_t>>(
+    m_config->get<uint64_t>(keyConnectionQueryTimeout));
+  return connectionQueryTimeout.has_value() ?
+    connectionQueryTimeout.value() : cDefaultTimeout;
+}
+
+std::optional<std::string> DenodoArrowFlightConfig::timePrecisionUnit() const {
+  const auto timePrecisionUnit =  std::optional<std::string>(
+    m_config->get<std::string>(keyTimePrecisionUnit));
+  validatePrecisionValues(timePrecisionUnit);
+  return timePrecisionUnit;
+}
+
+std::optional<std::string> DenodoArrowFlightConfig::timestampPrecisionUnit()
+    const {
+  const auto timestampPrecisionUnit = std::optional<std::string>(
+    m_config->get<std::string>(keyTimestampPrecisionUnit));
+  validatePrecisionValues(timestampPrecisionUnit);
+  return timestampPrecisionUnit;
+}
+
+bool DenodoArrowFlightConfig::autocommit() const {
+  auto value = std::optional<bool>(
+    m_config->get<bool>(keyAutocommit));
+  return value.has_value() ? value.value() : false;
+}
+
+std::optional<std::string> DenodoArrowFlightConfig::workspace() const {
+  return std::optional<std::string>(m_config->get<std::string>(keyWorkspace));
+}
+
+void DenodoArrowFlightConfig::validatePrecisionValues(
+    const std::optional<std::string>& optionalValue) const {
+  if (optionalValue.has_value()) {
+    std::string unitValue = optionalValue.value();
+    VELOX_CHECK(
+      cMilliseconds.compare(unitValue) == 0 ||
+      cMicroseconds.compare(unitValue) == 0 ||
+      cNanoseconds.compare(unitValue) == 0);
+  }
 }
 } // namespace facebook::presto

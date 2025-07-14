@@ -15,7 +15,7 @@ find_package(ArrowFlight REQUIRED)
 add_library(
         denodo_arrow_flight_connector OBJECT
         DenodoArrowFlightConnector.cpp DenodoArrowPrestoToVeloxConnector.cpp DenodoArrowFlightConnectorFactory.cpp
-        DenodoArrowFlightConfig.cpp DenodoAuthenticatorFactory.cpp DenodoBasicAuthenticator.cpp
+        DenodoArrowFlightConfig.cpp DenodoAuthenticatorFactory.cpp DenodoAuthenticator.cpp DenodoBasicAuthenticator.cpp
         DenodoArrowFlightDataSource.cpp)
 
 target_compile_definitions(denodo_arrow_flight_connector
@@ -24,3 +24,7 @@ target_compile_definitions(denodo_arrow_flight_connector
 target_link_libraries(
         denodo_arrow_flight_connector velox_connector ArrowFlight::arrow_flight_shared
         presto_flight_connector_utils presto_flight_connector_auth)
+
+if(PRESTO_ENABLE_TESTING)
+    add_subdirectory(tests)
+endif()

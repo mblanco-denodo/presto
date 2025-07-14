@@ -20,22 +20,20 @@ namespace facebook::presto {
 class DenodoBasicAuthenticator final : public DenodoAuthenticator {
 public:
   DenodoBasicAuthenticator(
-     const std::string& username,
-     const std::string& password,
-     const std::string& userAgent);
+     std::optional<std::string> username,
+     std::optional<std::string> password,
+     std::optional<std::string> userAgent,
+     std::optional<std::string> timePrecision,
+     std::optional<std::string> timestampPrecision,
+     const uint64_t queryTimeout,
+     const bool autocommit,
+     std::optional<std::string> workspace);
 
-  void authenticateClient(
-      std::unique_ptr<arrow::flight::FlightClient>& client,
-      const velox::config::ConfigBase* sessionProperties,
+  void populateAuthenticationCallHeaders(
       arrow::flight::AddCallHeaders& headerWriter) override;
 
 private:
-  static constexpr const char* authorizationKey = "authorization";
-  static constexpr const char* basicAuthenticationKey = "Basic ";
-  static constexpr const char* xForwardedUserAgentKey = "x-forwarded-user-agent";
-  static constexpr const char* mppQueryIdKey = "mpp-query-id";
   std::string username_;
   std::string password_;
-  std::string userAgent_;
 };
 }
