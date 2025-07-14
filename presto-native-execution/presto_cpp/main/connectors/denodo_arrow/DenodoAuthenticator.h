@@ -15,21 +15,46 @@
 
 #include "presto_cpp/main/connectors/arrow_flight/auth/Authenticator.h"
 #include "velox/connectors/Connector.h"
+#include <arrow/flight/client.h>
 
 namespace facebook::presto {
 class DenodoAuthenticator : public Authenticator {
 public:
+  DenodoAuthenticator(
+    std::optional<std::string> userAgent,
+    std::optional<std::string> timePrecision,
+    std::optional<std::string> timestampPrecision,
+    const uint64_t queryTimeout,
+    const bool autocommit,
+    std::optional<std::string> workspace);
+
   virtual ~DenodoAuthenticator() = default;
 
-  virtual const velox::connector::ConnectorQueryCtx* getQueryContext() const {
+  [[nodiscard]] virtual const velox::connector::ConnectorQueryCtx*
+    getQueryContext() const {
     return kConnectorQueryCtx;
   }
 
-  virtual void setQueryContext(const velox::connector::ConnectorQueryCtx* context) {
+  virtual void setQueryContext(
+    const velox::connector::ConnectorQueryCtx* context) {
     kConnectorQueryCtx = context;
   }
 
+  virtual void populateAuthenticationCallHeaders(
+    arrow::flight::AddCallHeaders& headerWriter) = 0;
+
+  void authenticateClient(
+      std::unique_ptr<arrow::flight::FlightClient>& client,
+      const velox::config::ConfigBase* sessionProperties,
+      arrow::flight::AddCallHeaders& headerWriter) final;
+
 private:
+  std::string userAgent_;
+  std::string timePrecision_;
+  std::string timestampPrecision_;
+  uint64_t queryTimeout_;
+  bool autocommit_;
+  std::string workspace_;
   const velox::connector::ConnectorQueryCtx* kConnectorQueryCtx{nullptr};
 };
 }

@@ -24,23 +24,32 @@ public:
      : ArrowFlightConfig(config), m_config{config} {}
 
   [[nodiscard]] std::optional<std::string> connectionUsername() const;
-  [[nodiscard]] static std::optional<std::string> connectionUsername(
-    const velox::config::ConfigBase* configBase);
   [[nodiscard]] std::optional<std::string> connectionPassword() const;
-  [[nodiscard]] static std::optional<std::string> connectionPassword(
-    const velox::config::ConfigBase* configBase);
   [[nodiscard]] std::optional<std::string> connectionUserAgent() const;
-  [[nodiscard]] static std::optional<std::string> connectionUserAgent(
-    const velox::config::ConfigBase* configBase);
   [[nodiscard]] std::optional<std::string> connectionAuthType() const;
-  [[nodiscard]] static std::optional<std::string> connectionAuthType(
-    const velox::config::ConfigBase* configBase);
+  [[nodiscard]] uint64_t connectionQueryTimeout() const;
+  [[nodiscard]] std::optional<std::string> timePrecisionUnit() const;
+  [[nodiscard]] std::optional<std::string> timestampPrecisionUnit() const;
+  [[nodiscard]] bool autocommit() const;
+  [[nodiscard]] std::optional<std::string> workspace() const;
 
  private:
   static constexpr const char* keyConnectionUsername = "connection.username";
   static constexpr const char* keyConnectionPassword = "connection.password";
   static constexpr const char* keyConnectionUserAgent = "connection.user-agent";
   static constexpr const char* keyConnectionAuthType = "connection.auth-type";
+  static constexpr const char* keyConnectionQueryTimeout = "connection.query-timeout";
+  static constexpr const char* keyTimePrecisionUnit = "time-precision-unit";
+  static constexpr const char* keyTimestampPrecisionUnit = "timestamp-precision-unit";
+  static constexpr const char* keyAutocommit = "autocommit";
+  static constexpr const char* keyWorkspace = "workspace";
+  const std::string cMilliseconds = "milliseconds";
+  const std::string cMicroseconds = "microseconds";
+  const std::string cNanoseconds = "nanoseconds";
+  static const uint64_t cDefaultTimeout = 900000;
   const std::shared_ptr<const velox::config::ConfigBase> m_config;
+
+  void validatePrecisionValues(
+    const std::optional<std::string>& optionalValue) const;
 };
 } // namespace facebook::presto

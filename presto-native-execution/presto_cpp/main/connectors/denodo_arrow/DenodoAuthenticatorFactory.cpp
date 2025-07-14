@@ -26,9 +26,14 @@ std::shared_ptr<Authenticator> DenodoAuthenticatorFactory::newAuthenticator(
     "Authentication type is null");
   if (strcmp(basicAuth, denodoArrowFlightAuthType.value().c_str()) == 0) {
     return std::make_shared<DenodoBasicAuthenticator>(
-      denodoArrowFlightConfig->connectionUsername().value(),
-      denodoArrowFlightConfig->connectionPassword().value(),
-      denodoArrowFlightConfig->connectionUserAgent().value());
+      denodoArrowFlightConfig->connectionUsername(),
+      denodoArrowFlightConfig->connectionPassword(),
+      denodoArrowFlightConfig->connectionUserAgent(),
+      denodoArrowFlightConfig->timePrecisionUnit(),
+      denodoArrowFlightConfig->timestampPrecisionUnit(),
+      denodoArrowFlightConfig->connectionQueryTimeout(),
+      denodoArrowFlightConfig->autocommit(),
+      denodoArrowFlightConfig->workspace());
   }
   if (strcmp(oauthAuth, denodoArrowFlightAuthType.value().c_str()) == 0) {
     // TODO
