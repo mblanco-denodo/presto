@@ -61,7 +61,7 @@ public class ContainerQueryRunnerUtils
         Properties properties = new Properties();
         properties.setProperty("connector.name", "tpch");
         properties.setProperty("tpch.column-naming", "STANDARD");
-        createPropertiesFile("testcontainers/coordinator/etc/catalog/tpch.properties", properties);
+        createPropertiesFile("testcontainers/coordinator/etc/catalog/tpch.properties.back", properties);
     }
 
     public static void createCoordinatorTpcdsProperties()
@@ -79,7 +79,7 @@ public class ContainerQueryRunnerUtils
         Properties properties = new Properties();
         properties.setProperty("connector.name", "tpch");
         properties.setProperty("tpch.column-naming", "STANDARD");
-        createPropertiesFile("testcontainers/" + nodeId + "/etc/catalog/tpch.properties", properties);
+        createPropertiesFile("testcontainers/" + nodeId + "/etc/catalog/tpch.properties.back", properties);
     }
 
     public static void createNativeWorkerConfigProperties(int coordinatorPort, String nodeId)

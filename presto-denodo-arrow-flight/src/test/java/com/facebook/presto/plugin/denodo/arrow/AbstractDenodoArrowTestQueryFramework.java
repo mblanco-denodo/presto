@@ -47,6 +47,7 @@ public class AbstractDenodoArrowTestQueryFramework
                 .put("arrow-flight.server.port", "9994")
                 .put("connection.username", "admin")
                 .put("connection.password", "admin")
+                .put("connection.auth-type", "basic")
                 .build();
         queryRunner.createCatalog(DENODO_CATALOG, "denodo-arrow", connectorConfig);
         return queryRunner;

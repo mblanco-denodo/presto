@@ -19,36 +19,26 @@ import org.apache.arrow.flight.auth2.Auth2Constants;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.function.Consumer;
 
-public class BasicAuthCredentials
-        implements Consumer<CallHeaders>
+public class DenodoBasicAuthCredentials
+        implements DenodoAuthenticator
 {
-    public static final String ORIGINAL_USER_AGENT_KEY = "x-forwarded-user-agent";
-    public static final String EMBEDDED_MPP_QUERY_ID = "mpp-query-id";
-    private final Logger logger = Logger.get(BasicAuthCredentials.class);
+    private final Logger logger = Logger.get(DenodoBasicAuthCredentials.class);
     private final String username;
     private final String password;
-    private final String userAgent;
-    private final String queryId;
 
-    public BasicAuthCredentials(String username, String password, String queryId)
+    public DenodoBasicAuthCredentials(String username, String password)
     {
         this.username = username;
         this.password = password;
-        this.userAgent = "Denodo-Embedded-MPP";
-        this.queryId = queryId;
     }
 
     @Override
-    public void accept(CallHeaders callHeaders)
+    public void populateAuthenticationCallHeaders(CallHeaders callHeaders)
     {
         String credentials = username + ':' + password;
         String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
         callHeaders.insert(Auth2Constants.AUTHORIZATION_HEADER, Auth2Constants.BASIC_PREFIX + encodedCredentials);
-        //callHeaders.insert(USER_AGENT_KEY, userAgent);
-        callHeaders.insert(ORIGINAL_USER_AGENT_KEY, userAgent);
-        callHeaders.insert(EMBEDDED_MPP_QUERY_ID, queryId);
-        logger.debug("Added Basic Auth header.");
+        logger.debug("Added Basic Auth header: {}", callHeaders);
     }
 }

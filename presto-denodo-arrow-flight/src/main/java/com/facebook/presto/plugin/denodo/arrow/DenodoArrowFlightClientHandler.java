@@ -13,13 +13,11 @@
  */
 package com.facebook.presto.plugin.denodo.arrow;
 
-import com.facebook.airlift.json.JsonCodec;
 import com.facebook.plugin.arrow.ArrowTableHandle;
 import com.facebook.plugin.arrow.ArrowTableLayoutHandle;
 import com.facebook.plugin.arrow.BaseArrowFlightClientHandler;
-import com.facebook.presto.plugin.denodo.arrow.arrowflight.DenodoArrowFlightRequest;
-import com.facebook.presto.plugin.denodo.arrow.arrowflight.DenodoArrowFlightResponse;
-import com.facebook.presto.plugin.denodo.arrow.auth.BasicAuthCredentials;
+import com.facebook.presto.plugin.denodo.arrow.auth.DenodoAuthenticatorFactory;
+import com.facebook.presto.plugin.denodo.arrow.auth.DenodoCallOptions;
 import com.facebook.presto.plugin.denodo.arrow.exception.DenodoArrowFlightRuntimeException;
 import com.facebook.presto.plugin.denodo.arrow.vdp.VdpSqlBuilder;
 import com.facebook.presto.spi.ConnectorSession;
@@ -28,12 +26,15 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
+import org.apache.arrow.flight.Action;
+import org.apache.arrow.flight.ActionType;
 import org.apache.arrow.flight.CallOption;
 import org.apache.arrow.flight.CallOptions;
 import org.apache.arrow.flight.FlightClient;
 import org.apache.arrow.flight.FlightDescriptor;
 import org.apache.arrow.flight.FlightInfo;
 import org.apache.arrow.flight.FlightStream;
+import org.apache.arrow.flight.Result;
 import org.apache.arrow.flight.grpc.CredentialCallOption;
 import org.apache.arrow.flight.sql.impl.FlightSql;
 import org.apache.arrow.memory.BufferAllocator;
@@ -44,12 +45,11 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-import static java.util.Objects.requireNonNull;
 
 // TODO REFACTOR DE TODO PARA QUE NON HAXA CÓDIGO REPETIDO E TAL
 // TODO intentar paralelizar o acceso aos endpoints con un concurrent map e un multithreaded stream
@@ -58,31 +58,32 @@ public class DenodoArrowFlightClientHandler
 {
     private static final Logger log = LoggerFactory.getLogger(DenodoArrowFlightClientHandler.class);
     private final DenodoArrowFlightConfig config;
-    private final JsonCodec<DenodoArrowFlightRequest> requestCodec;
-    private final JsonCodec<DenodoArrowFlightResponse> responseCodec;
 
     @Inject
     public DenodoArrowFlightClientHandler(BufferAllocator allocator,
-                                          DenodoArrowFlightConfig config,
-                                          JsonCodec<DenodoArrowFlightRequest> requestCodec,
-                                          JsonCodec<DenodoArrowFlightResponse> responseCodec)
+                                          DenodoArrowFlightConfig config)
     {
         super(allocator, config);
         this.config = config;
-        this.requestCodec = requireNonNull(requestCodec, "requestCodec is null");
-        this.responseCodec = requireNonNull(responseCodec, "responseCodec is null");
     }
 
     @Override
     public CallOption[] getCallOptions(ConnectorSession connectorSession)
     {
+        DenodoCallOptions denodoCallOptions = new DenodoCallOptions(
+                DenodoAuthenticatorFactory.getAuthenticator(this.config),
+                this.config.getConnectionUserAgent(),
+                connectorSession.getQueryId(),
+                this.config.getTimePrecisionUnit(),
+                this.config.getTimestampPrecisionUnit(),
+                this.config.getQueryTimeout(),
+                this.config.getAutocommit(),
+                this.config.getWorkspace());
         return new CallOption[] {
-                new CredentialCallOption(
-                        new BasicAuthCredentials(
-                                this.config.getConnectionUserName(),
-                                this.config.getConnectionPassword(),
-                                this.config.getConnectionUserAgent())),
-                CallOptions.timeout(300, TimeUnit.SECONDS)
+                new CredentialCallOption(denodoCallOptions),
+                CallOptions.timeout(
+                        this.config.getQueryTimeout(),
+                        TimeUnit.MILLISECONDS)
         };
     }
 
@@ -168,6 +169,44 @@ public class DenodoArrowFlightClientHandler
                 .setQuery("select * from \"" + schemaName + "\".\"" + tableName + "\" where 1=0")
                 .build();
         return FlightDescriptor.command(Any.pack(getTable).toByteArray());
+    }
+
+    public static final ActionType FLIGHT_SQL_CREATE_PREPARED_STATEMENT = new ActionType("CreatePreparedStatement",
+            "Creates a reusable prepared statement resource on the server. \n" +
+                    "Request Message: ActionCreatePreparedStatementRequest\n" +
+                    "Response Message: ActionCreatePreparedStatementResult");
+
+    @Override
+    public FlightInfo getFlightInfoForTableScan(ArrowTableLayoutHandle tableLayoutHandle, ConnectorSession session)
+    {
+        ArrowTableHandle tableHandle = tableLayoutHandle.getTable();
+        String query = new VdpSqlBuilder().buildSql(
+                tableHandle.getSchema(),
+                tableHandle.getTable(),
+                tableLayoutHandle.getColumnHandles(), ImmutableMap.of(),
+                tableLayoutHandle.getTupleDomain());
+        query = query + String.format(" CONTEXT ('i18n'='%s')", this.config.getConnectionI18n());
+        Action action = new Action(FLIGHT_SQL_CREATE_PREPARED_STATEMENT.getType(),
+                Any.pack(FlightSql.ActionCreatePreparedStatementRequest
+                        .newBuilder()
+                        .setQuery(query)
+                        .build())
+                        .toByteArray());
+        try (FlightClient client = createFlightClient()) {
+            Iterator<Result> preparedStatementResults = client.doAction(action, getCallOptions(session));
+            FlightSql.ActionCreatePreparedStatementResult preparedStatementResult =
+                    Any.parseFrom(preparedStatementResults.next().getBody())
+                            .unpack(FlightSql.ActionCreatePreparedStatementResult.class);
+            FlightDescriptor descriptor = FlightDescriptor
+                    .command(Any.pack(FlightSql.CommandPreparedStatementQuery.newBuilder()
+                            .setPreparedStatementHandle(preparedStatementResult.getPreparedStatementHandle())
+                            .build())
+                            .toByteArray());
+            return getFlightInfo(descriptor, session);
+        }
+        catch (Exception e) {
+            throw new DenodoArrowFlightRuntimeException("Cannot create PreparedStatement", e);
+        }
     }
 
     @Override
