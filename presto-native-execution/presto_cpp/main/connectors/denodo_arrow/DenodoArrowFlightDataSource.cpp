@@ -25,8 +25,7 @@
 namespace facebook::presto {
 DenodoArrowFlightDataSource::DenodoArrowFlightDataSource(
     const velox::RowTypePtr& outputType,
-    const std::unordered_map<std::string,
-    std::shared_ptr<velox::connector::ColumnHandle>>& columnHandles,
+    const velox::connector::ColumnHandleMap& columnHandles,
     std::shared_ptr<Authenticator> authenticator,
     const velox::connector::ConnectorQueryCtx* connectorQueryCtx,
     const std::shared_ptr<ArrowFlightConfig>& flightConfig,
