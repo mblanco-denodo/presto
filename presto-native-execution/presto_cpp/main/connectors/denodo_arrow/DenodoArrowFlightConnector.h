@@ -35,13 +35,10 @@ public:
                           ->newAuthenticator(config)) {}
 
   std::unique_ptr<velox::connector::DataSource> createDataSource(
-      const velox::RowTypePtr& outputType,
-      const std::shared_ptr<velox::connector::ConnectorTableHandle>&
-          tableHandle,
-      const std::unordered_map<
-          std::string,
-          std::shared_ptr<velox::connector::ColumnHandle>>& columnHandles,
-      velox::connector::ConnectorQueryCtx* connectorQueryCtx) override;
+    const velox::RowTypePtr& outputType,
+    const velox::connector::ConnectorTableHandlePtr& tableHandle,
+    const velox::connector::ColumnHandleMap& columnHandles,
+    velox::connector::ConnectorQueryCtx* connectorQueryCtx) override;
 
 private:
   static std::shared_ptr<arrow::flight::FlightClientOptions> initClientOpts(
