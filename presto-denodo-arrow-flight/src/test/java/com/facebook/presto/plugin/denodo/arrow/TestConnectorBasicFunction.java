@@ -18,7 +18,7 @@ import org.testng.annotations.Test;
 
 import static com.facebook.presto.testing.assertions.Assert.assertEquals;
 
-public class ConnectorBasicTests
+public class TestConnectorBasicFunction
         extends AbstractDenodoArrowTestQueryFramework
 {
     @Test(description = "Tests that the queryRunner can execute sentences properly")

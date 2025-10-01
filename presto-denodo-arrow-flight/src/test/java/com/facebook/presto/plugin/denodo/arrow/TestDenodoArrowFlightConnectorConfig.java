@@ -20,7 +20,7 @@ import org.testng.annotations.Test;
 
 import java.util.Map;
 
-public class DenodoArrowFlightConnectorConfigTests
+public class TestDenodoArrowFlightConnectorConfig
 {
     @Test
     public void defaultPropertyMappingsTest()
