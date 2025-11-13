@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.facebook.presto</groupId>
         <artifactId>presto-root</artifactId>
-        <version>0.295-SNAPSHOT</version>
+        <version>0.295</version>
     </parent>
 
     <artifactId>presto-denodo-arrow-flight</artifactId>
@@ -35,6 +35,11 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <scope>compile</scope>
+        </dependency>
         <dependency>
             <groupId>org.apache.arrow</groupId>
             <artifactId>arrow-memory-core</artifactId>
@@ -239,8 +244,16 @@
         <dependency>
             <groupId>com.facebook.presto</groupId>
             <artifactId>presto-base-arrow-flight</artifactId>
-            <version>0.292</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.arrow</groupId>
+            <artifactId>flight-sql</artifactId>
+            <version>17.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.facebook.presto</groupId>
+            <artifactId>presto-base-jdbc</artifactId>
         </dependency>
     </dependencies>
 

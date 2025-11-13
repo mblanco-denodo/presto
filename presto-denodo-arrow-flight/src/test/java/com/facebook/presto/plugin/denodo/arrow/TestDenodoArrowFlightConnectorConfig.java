@@ -14,7 +14,6 @@
 package com.facebook.presto.plugin.denodo.arrow;
 
 import com.facebook.airlift.configuration.testing.ConfigAssertions;
-import com.facebook.plugin.arrow.ArrowFlightConfig;
 import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.Test;
 
@@ -40,6 +39,8 @@ public class TestDenodoArrowFlightConnectorConfig
             .setVerifyServer(true)
             .setFlightServerName(null)
             .setFlightServerSSLCertificate(null)
+            .setFlightClientSSLCertificate(null)
+            .setFlightClientSSLKey(null)
             .setArrowFlightServerSslEnabled(false)
             .setArrowFlightPort(null);
         ConfigAssertions.assertRecordedDefaults(defaults);
@@ -53,6 +54,8 @@ public class TestDenodoArrowFlightConnectorConfig
                 .put("arrow-flight.server.port", "9999")
                 .put("arrow-flight.server-ssl-certificate", "/certificates")
                 .put("arrow-flight.server-ssl-enabled", "true")
+                .put("arrow-flight.client-ssl-certificate", "/certificates")
+                .put("arrow-flight.client-ssl-key", "key")
                 .put("arrow-flight.server.verify", "false")
                 .put("connection.i18n", "us-pst")
                 .put("connection.username", "test-username")
@@ -65,7 +68,7 @@ public class TestDenodoArrowFlightConnectorConfig
                 .put("autocommit", "true")
                 .put("workspace", "default")
                 .build();
-        DenodoArrowFlightConfig expected = new DenodoArrowFlightConfig()
+        DenodoArrowFlightConfig expected = (DenodoArrowFlightConfig) new DenodoArrowFlightConfig()
                 .setConnectionUserName("test-username")
                 .setConnectionPassword("test-password")
                 .setConnectionAuthType("test-authType")
@@ -75,11 +78,12 @@ public class TestDenodoArrowFlightConnectorConfig
                 .setTimePrecisionUnit("milliseconds")
                 .setTimestampPrecisionUnit("milliseconds")
                 .setAutocommit(true)
-                .setWorkspace("default");
-        ((ArrowFlightConfig) expected)
+                .setWorkspace("default")
                 .setVerifyServer(false)
                 .setFlightServerName("vdp-cluster")
                 .setFlightServerSSLCertificate("/certificates")
+                .setFlightClientSSLCertificate("/certificates")
+                .setFlightClientSSLKey("key")
                 .setArrowFlightServerSslEnabled(true)
                 .setArrowFlightPort(9999);
         ConfigAssertions.assertFullMapping(properties, expected);

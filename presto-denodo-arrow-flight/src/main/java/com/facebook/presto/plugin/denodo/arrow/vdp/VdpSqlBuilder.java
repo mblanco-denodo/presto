@@ -229,7 +229,7 @@ public class VdpSqlBuilder
             }
         }
 
-        // Add back all of the possible single values either as an equality or an IN predicate
+        // Add back all the possible single values either as an equality or an IN predicate
         if (singleValues.size() == 1) {
             disjuncts.add(toPredicate(columnName, "=", getOnlyElement(singleValues), columnHandle, accumulator));
         }
