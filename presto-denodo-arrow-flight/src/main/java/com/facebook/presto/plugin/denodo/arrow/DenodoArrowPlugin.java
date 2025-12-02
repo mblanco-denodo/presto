@@ -13,7 +13,6 @@
  */
 package com.facebook.presto.plugin.denodo.arrow;
 
-import com.facebook.plugin.arrow.ArrowConnectorFactory;
 import com.facebook.presto.spi.Plugin;
 import com.facebook.presto.spi.connector.ConnectorFactory;
 import com.google.common.collect.ImmutableList;
@@ -44,6 +43,6 @@ public class DenodoArrowPlugin
     @Override
     public Iterable<ConnectorFactory> getConnectorFactories()
     {
-        return ImmutableList.of(new ArrowConnectorFactory(name, module, extraModules, getClassLoader()));
+        return ImmutableList.of(new DenodoArrowConnectorFactory(name, module, extraModules, getClassLoader()));
     }
 }

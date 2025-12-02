@@ -14,8 +14,8 @@
 #include "presto_cpp/main/connectors/denodo_arrow/DenodoArrowPrestoToVeloxConnector.h"
 #include <folly/base64.h>
 #include "presto_cpp/main/connectors/denodo_arrow/DenodoArrowFlightConnector.h"
-#include "presto_cpp/presto_protocol/connector/arrow_flight/ArrowFlightConnectorProtocol.h"
-
+#include "presto_cpp/main/connectors/denodo_arrow/DenodoArrowFlightDataSource.h"
+#include "presto_cpp/presto_protocol/connector/denodo_arrow/DenodoArrowFlightConnectorProtocol.h"
 namespace facebook::presto {
 
 std::unique_ptr<velox::connector::ConnectorSplit>
@@ -24,11 +24,12 @@ DenodoArrowPrestoToVeloxConnector::toVeloxSplit(
     const protocol::ConnectorSplit* const connectorSplit,
     const protocol::SplitContext* splitContext) const {
   auto arrowSplit =
-      dynamic_cast<const protocol::arrow_flight::ArrowSplit*>(connectorSplit);
+      dynamic_cast<const protocol::denodo_arrow::DenodoArrowSplit*>(connectorSplit);
   VELOX_CHECK_NOT_NULL(
       arrowSplit, "Unexpected split type {}", connectorSplit->_type);
-  return std::make_unique<presto::ArrowFlightSplit>(
-      catalogId, arrowSplit->flightEndpointBytes);
+  LOG(INFO) << "toVeloxSplit with executionIdentifier: " << arrowSplit->executionIdentifier;
+  return std::make_unique<DenodoArrowFlightSplit>(
+      catalogId, arrowSplit->flightEndpointBytes, arrowSplit->executionIdentifier);
 }
 
 std::unique_ptr<velox::connector::ColumnHandle>
@@ -55,7 +56,7 @@ DenodoArrowPrestoToVeloxConnector::toVeloxTableHandle(
 
 std::unique_ptr<protocol::ConnectorProtocol>
 DenodoArrowPrestoToVeloxConnector::createConnectorProtocol() const {
-  return std::make_unique<protocol::arrow_flight::ArrowConnectorProtocol>();
+  return std::make_unique<protocol::denodo_arrow::DenodoArrowConnectorProtocol>();
 }
 
 } // namespace facebook::presto

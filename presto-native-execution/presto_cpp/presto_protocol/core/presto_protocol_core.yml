@@ -115,6 +115,7 @@ AbstractClasses:
       - { name: EmptySplit,           key: $empty }
       - { name: SystemSplit,          key: $system@system }
       - { name: ArrowSplit,           key: arrow-flight }
+      - { name: DenodoArrowSplit,     key: denodo-arrow }
 
   ConnectorHistogram:
     super: JsonEncodedSubclass

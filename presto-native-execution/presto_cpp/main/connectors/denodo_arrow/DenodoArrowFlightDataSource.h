@@ -26,6 +26,21 @@ class Location;
 } // namespace arrow
 
 namespace facebook::presto {
+
+struct DenodoArrowFlightSplit : public ArrowFlightSplit {
+  /// @param connectorId
+  /// @param flightEndpointBytes Base64 Serialized `FlightEndpoint`
+  /// @param executionIdentifier String that identifies the query execution
+  DenodoArrowFlightSplit(
+      const std::string& connectorId,
+      const std::string& flightEndpointBytes,
+      const std::string& executionIdentifier)
+      : ArrowFlightSplit(connectorId, flightEndpointBytes),
+        executionIdentifier_(executionIdentifier) {}
+
+  const std::string executionIdentifier_;
+};
+
 class DenodoArrowFlightDataSource : public ArrowFlightDataSource {
 public:
   DenodoArrowFlightDataSource(
@@ -41,5 +56,6 @@ private:
   std::shared_ptr<Authenticator> authenticator_;
   const velox::connector::ConnectorQueryCtx* connectorQueryCtx_;
 };
+
 } // namespace facebook::presto
 

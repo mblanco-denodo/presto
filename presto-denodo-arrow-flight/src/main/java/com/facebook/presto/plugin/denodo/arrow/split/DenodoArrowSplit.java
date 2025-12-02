@@ -1,0 +1,39 @@
+/*
+ * Copyright (c) 2025. DENODO Technologies.
+ * http://www.denodo.com
+ * All rights reserved.
+ *
+ * This software is the confidential and proprietary information of DENODO
+ * Technologies ("Confidential Information"). You shall not disclose such
+ * Confidential Information and shall use it only in accordance with the terms
+ * of the license agreement you entered into with DENODO.
+ */
+package com.facebook.presto.plugin.denodo.arrow.split;
+
+import com.facebook.plugin.arrow.ArrowSplit;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.annotation.Nullable;
+
+public class DenodoArrowSplit
+            extends ArrowSplit
+{
+    private final String executionIdentifier;
+
+    @JsonCreator
+    public DenodoArrowSplit(
+            @JsonProperty("schemaName") @Nullable String schemaName,
+            @JsonProperty("tableName") String tableName,
+            @JsonProperty("flightEndpointBytes") byte[] flightEndpointBytes,
+            @JsonProperty("executionIdentifier") @Nullable String executionIdentifier)
+    {
+        super(schemaName, tableName, flightEndpointBytes);
+        this.executionIdentifier = executionIdentifier;
+    }
+
+    @JsonProperty
+    public String getExecutionIdentifier()
+    {
+        return executionIdentifier;
+    }
+}

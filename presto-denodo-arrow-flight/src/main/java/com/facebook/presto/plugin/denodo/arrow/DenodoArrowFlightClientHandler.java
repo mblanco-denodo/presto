@@ -13,6 +13,7 @@
  */
 package com.facebook.presto.plugin.denodo.arrow;
 
+import com.facebook.plugin.arrow.ArrowException;
 import com.facebook.plugin.arrow.ArrowTableHandle;
 import com.facebook.plugin.arrow.ArrowTableLayoutHandle;
 import com.facebook.plugin.arrow.BaseArrowFlightClientHandler;
@@ -51,6 +52,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+
+import static com.facebook.plugin.arrow.ArrowErrorCode.ARROW_FLIGHT_INFO_ERROR;
 
 public class DenodoArrowFlightClientHandler
         extends BaseArrowFlightClientHandler
@@ -93,6 +96,25 @@ public class DenodoArrowFlightClientHandler
                 CallOptions.timeout(
                         this.config.getQueryTimeout(),
                         TimeUnit.MILLISECONDS)
+        };
+    }
+
+    private CallOption[] getCallOptions(ConnectorSession connectorSession, String executionIdentifier)
+    {
+        DenodoCallOptions denodoCallOptions = new DenodoCallOptions(
+                DenodoAuthenticatorFactory.getAuthenticator(this.config),
+                this.config.getConnectionUserAgent(),
+                connectorSession.getQueryId() + executionIdentifier,
+                this.config.getTimePrecisionUnit(),
+                this.config.getTimestampPrecisionUnit(),
+                this.config.getQueryTimeout(),
+                this.config.getAutocommit(),
+                this.config.getWorkspace());
+        return new CallOption[] {
+                new CredentialCallOption(denodoCallOptions),
+                CallOptions.timeout(
+                    this.config.getQueryTimeout(),
+                    TimeUnit.MILLISECONDS)
         };
     }
 
@@ -203,8 +225,41 @@ public class DenodoArrowFlightClientHandler
     }
 
     @Override
-    protected FlightDescriptor getFlightDescriptorForTableScan(ConnectorSession connectorSession,
-                                                               ArrowTableLayoutHandle tableLayoutHandle)
+    protected FlightDescriptor getFlightDescriptorForTableScan(ConnectorSession session,
+            ArrowTableLayoutHandle tableLayoutHandle)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public FlightInfo getFlightInfoForTableScan(ConnectorSession session, ArrowTableLayoutHandle tableLayoutHandle)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    public FlightInfo getFlightInfoForTableScan(ConnectorSession session, ArrowTableLayoutHandle tableLayoutHandle,
+            String executionIdentifier)
+    {
+        FlightDescriptor flightDescriptor = getFlightDescriptorForTableScan(session, tableLayoutHandle,
+                executionIdentifier);
+        return getFlightInfo(session, flightDescriptor, executionIdentifier);
+    }
+
+    protected FlightInfo getFlightInfo(ConnectorSession connectorSession, FlightDescriptor flightDescriptor,
+            String executionIdentifier)
+    {
+        try (FlightClient client = createFlightClient()) {
+            CallOption[] callOptions = getCallOptions(connectorSession, executionIdentifier);
+            return client.getInfo(flightDescriptor, callOptions);
+        }
+        catch (InterruptedException e) {
+            throw new ArrowException(ARROW_FLIGHT_INFO_ERROR, "Error getting flight information: " + e.getMessage(), e);
+        }
+    }
+
+    private FlightDescriptor getFlightDescriptorForTableScan(ConnectorSession connectorSession,
+                                                               ArrowTableLayoutHandle tableLayoutHandle,
+                                                               String executionIdentifier)
     {
         ArrowTableHandle tableHandle = tableLayoutHandle.getTable();
         String query = new VdpSqlBuilder().buildSql(
@@ -213,7 +268,7 @@ public class DenodoArrowFlightClientHandler
                 tableLayoutHandle.getColumnHandles(), ImmutableMap.of(),
                 tableLayoutHandle.getTupleDomain());
         query = query + String.format(" CONTEXT ('i18n'='%s')", this.config.getConnectionI18n());
-        CallOption[] callOptions = getCallOptions(connectorSession);
+        CallOption[] callOptions = getCallOptions(connectorSession, executionIdentifier);
         Action action = new Action(FlightSqlUtils.FLIGHT_SQL_CREATE_PREPARED_STATEMENT.getType(),
                 Any.pack(FlightSql.ActionCreatePreparedStatementRequest
                                 .newBuilder()

@@ -117,6 +117,7 @@ AbstractClasses:
       - { name: EmptySplit,           key: $empty }
       - { name: SystemSplit,          key: $system@system }
       - { name: ArrowSplit,           key: arrow-flight }
+      - { name: DenodoArrowSplit,     key: denodo-arrow }
 
   ConnectorHistogram:
     super: JsonEncodedSubclass
@@ -386,3 +387,4 @@ JavaClasses:
   - presto-base-arrow-flight/src/main/java/com/facebook/plugin/arrow/ArrowTableHandle.java
   - presto-base-arrow-flight/src/main/java/com/facebook/plugin/arrow/ArrowTableLayoutHandle.java
   - presto-base-arrow-flight/src/main/java/com/facebook/plugin/arrow/ArrowSplit.java
+  - presto-denodo-arrow-flight/src/main/java/com/facebook/plugin/denodo/arrow/split/DenodoArrowSplit.java

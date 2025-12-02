@@ -1,0 +1,40 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+AbstractClasses:
+  ColumnHandle:
+    super: JsonEncodedSubclass
+    comparable: true
+    subclasses:
+      - { name: ArrowColumnHandle,        key: denodo-arrow }
+
+  ConnectorTableHandle:
+    super: JsonEncodedSubclass
+    subclasses:
+      - { name: ArrowTableHandle,         key: denodo-arrow }
+
+  ConnectorTableLayoutHandle:
+    super: JsonEncodedSubclass
+    subclasses:
+      - { name: ArrowTableLayoutHandle,   key: denodo-arrow }
+
+  ConnectorSplit:
+    super: JsonEncodedSubclass
+    subclasses:
+      - { name: DenodoArrowSplit,          key: denodo-arrow }
+
+JavaClasses:
+  - presto-base-arrow-flight/src/main/java/com/facebook/plugin/arrow/ArrowColumnHandle.java
+  - presto-base-arrow-flight/src/main/java/com/facebook/plugin/arrow/ArrowTableHandle.java
+  - presto-base-arrow-flight/src/main/java/com/facebook/plugin/arrow/ArrowTableLayoutHandle.java
+  - presto-denodo-arrow-flight/src/main/java/com/facebook/presto/plugin/denodo/arrow/split/DenodoArrowSplit.java

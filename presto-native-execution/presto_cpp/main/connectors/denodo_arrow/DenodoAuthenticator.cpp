@@ -18,6 +18,9 @@
 #include <arrow/flight/middleware.h>
 
 namespace facebook::presto {
+// defining thread local variable
+thread_local std::string DenodoAuthenticator::executionIdentifier_;
+
 DenodoAuthenticator::DenodoAuthenticator(
   std::optional<std::string> userAgent,
   std::optional<std::string> timePrecision,
@@ -42,9 +45,10 @@ void DenodoAuthenticator::authenticateClient(
   headerWriter.AddHeader(
     DenodoArrowFlightSqlConnectionConstants::xForwardedUserAgentKey,
     userAgent_);
+  LOG(INFO) << "mppQueryId + eId: " << getQueryContext()->queryId() + executionIdentifier_;
   headerWriter.AddHeader(
     DenodoArrowFlightSqlConnectionConstants::mppQueryIdKey,
-    getQueryContext()->queryId());
+    getQueryContext()->queryId() + executionIdentifier_);
   if (!timePrecision_.empty()) {
     headerWriter.AddHeader(
       DenodoArrowFlightSqlConnectionConstants::timePrecisionKey,

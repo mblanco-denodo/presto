@@ -15,6 +15,10 @@ package com.facebook.presto.plugin.denodo.arrow;
 
 import com.facebook.airlift.json.JsonCodecFactory;
 import com.facebook.plugin.arrow.BaseArrowFlightClientHandler;
+import com.facebook.presto.plugin.denodo.arrow.handler.DenodoArrowHandleResolver;
+import com.facebook.presto.plugin.denodo.arrow.split.DenodoArrowSplitManager;
+import com.facebook.presto.spi.ConnectorHandleResolver;
+import com.facebook.presto.spi.connector.ConnectorSplitManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Binder;
 import com.google.inject.Module;
@@ -38,6 +42,8 @@ public class DenodoArrowModule
     {
         configBinder(binder).bindConfig(DenodoArrowFlightConfig.class);
         binder.bind(BaseArrowFlightClientHandler.class).to(DenodoArrowFlightClientHandler.class).in(Scopes.SINGLETON);
+        binder.bind(ConnectorSplitManager.class).to(DenodoArrowSplitManager.class).in(Scopes.SINGLETON);
+        binder.bind(ConnectorHandleResolver.class).to(DenodoArrowHandleResolver.class).in(Scopes.SINGLETON);
 
         binder.bind(ObjectMapper.class).in(Scopes.SINGLETON);
         binder.bind(JsonCodecFactory.class).in(Scopes.SINGLETON);

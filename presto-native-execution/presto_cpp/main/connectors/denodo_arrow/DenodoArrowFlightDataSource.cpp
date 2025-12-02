@@ -12,13 +12,11 @@
  * limitations under the License.
  */
 #include "presto_cpp/main/connectors/denodo_arrow/DenodoArrowFlightDataSource.h"
-#include <arrow/c/bridge.h>
 #include <arrow/flight/client.h>
 #include <utility>
 
 #include "presto_cpp/main/connectors/denodo_arrow/DenodoAuthenticator.h"
 #include "presto_cpp/main/connectors/arrow_flight/ArrowFlightConnector.h"
-#include "presto_cpp/main/common/ConfigReader.h"
 #include "presto_cpp/main/connectors/arrow_flight/auth/Authenticator.h"
 #include "velox/vector/arrow/Bridge.h"
 
@@ -34,6 +32,7 @@ DenodoArrowFlightDataSource::DenodoArrowFlightDataSource(
       connectorQueryCtx, flightConfig, clientOpts) {
   authenticator_ = std::move(authenticator);
   connectorQueryCtx_ = connectorQueryCtx;
+  LOG(INFO) << "Creating DenodoArrowFlightDataSource";
 }
 
 void DenodoArrowFlightDataSource::addSplit(
@@ -41,6 +40,12 @@ void DenodoArrowFlightDataSource::addSplit(
   std::shared_ptr<DenodoAuthenticator> denodoAuthenticator =
     std::dynamic_pointer_cast<DenodoAuthenticator>(authenticator_);
   denodoAuthenticator->setQueryContext(connectorQueryCtx_);
+  std::shared_ptr<DenodoArrowFlightSplit> denodoArrowFlightSplit =
+    std::dynamic_pointer_cast<DenodoArrowFlightSplit>(split);
+  LOG(INFO) <<
+    "addSplit: adding DenodoArrowFlightSplit with executionIdentifier: " <<
+      denodoArrowFlightSplit->executionIdentifier_;
+  denodoAuthenticator->setExecutionIdentifier(denodoArrowFlightSplit->executionIdentifier_);
   ArrowFlightDataSource::addSplit(split);
 }
 } // namespace facebook presto
