@@ -45,6 +45,7 @@ void DenodoArrowFlightDataSource::addSplit(
   LOG(INFO) <<
     "addSplit: adding DenodoArrowFlightSplit with executionIdentifier: " <<
       denodoArrowFlightSplit->executionIdentifier_;
+  denodoAuthenticator->setQueryId(connectorQueryCtx_->queryId());
   denodoAuthenticator->setExecutionIdentifier(denodoArrowFlightSplit->executionIdentifier_);
   ArrowFlightDataSource::addSplit(split);
 }

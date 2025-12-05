@@ -19,6 +19,7 @@
 
 namespace facebook::presto {
 // defining thread local variable
+thread_local std::string DenodoAuthenticator::queryId_;
 thread_local std::string DenodoAuthenticator::executionIdentifier_;
 
 DenodoAuthenticator::DenodoAuthenticator(
@@ -48,7 +49,7 @@ void DenodoAuthenticator::authenticateClient(
   LOG(INFO) << "mppQueryId + eId: " << getQueryContext()->queryId() + executionIdentifier_;
   headerWriter.AddHeader(
     DenodoArrowFlightSqlConnectionConstants::mppQueryIdKey,
-    getQueryContext()->queryId() + executionIdentifier_);
+    queryId_ + executionIdentifier_);
   if (!timePrecision_.empty()) {
     headerWriter.AddHeader(
       DenodoArrowFlightSqlConnectionConstants::timePrecisionKey,

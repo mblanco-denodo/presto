@@ -44,6 +44,10 @@ public:
     executionIdentifier_ = executionIdentifier;
   }
 
+  virtual void setQueryId(const std::string queryId) {
+    queryId_ = queryId;
+  }
+
   virtual void populateAuthenticationCallHeaders(
     arrow::flight::AddCallHeaders& headerWriter) = 0;
 
@@ -60,6 +64,7 @@ private:
   bool autocommit_;
   std::string workspace_;
   const velox::connector::ConnectorQueryCtx* kConnectorQueryCtx{nullptr};
+  thread_local static std::string queryId_;
   thread_local static std::string executionIdentifier_;
 };
 }

@@ -315,7 +315,7 @@
                             <descriptors>
                                 <descriptor>src/main/assembly/denodo.xml</descriptor>
                             </descriptors>
-                            <finalName>presto-denodo-arrow-flight-1.0.0</finalName>
+                            <finalName>presto-denodo-arrow-flight-0.295.0</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                         </configuration>
                     </execution>

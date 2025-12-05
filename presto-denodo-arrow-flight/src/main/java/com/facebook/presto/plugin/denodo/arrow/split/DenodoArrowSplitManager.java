@@ -52,8 +52,11 @@ public class DenodoArrowSplitManager
         ArrowTableLayoutHandle tableLayoutHandle = (ArrowTableLayoutHandle) layout;
         ArrowTableHandle tableHandle = tableLayoutHandle.getTable();
         // compute execution identifier
-        String executionIdentifier = Integer.toString(this.counter.getValue());
-        this.counter.increment();
+        String executionIdentifier;
+        synchronized (this) {
+            executionIdentifier = Integer.toString(this.counter.getValue());
+            this.counter.increment();
+        }
         FlightInfo flightInfo = clientHandler.getFlightInfoForTableScan(session, tableLayoutHandle, executionIdentifier);
         log.info("sending split request with query + eId: {}", session.getQueryId() + '-' + executionIdentifier);
         List<DenodoArrowSplit> splits = flightInfo.getEndpoints()
