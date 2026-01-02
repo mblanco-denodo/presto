@@ -11,6 +11,7 @@
 # limitations under the License.
 find_package(Arrow REQUIRED CONFIG)
 find_package(ArrowFlight REQUIRED)
+find_package(ArrowFlightSql REQUIRED)
 
 add_library(
         denodo_arrow_flight_connector OBJECT
@@ -22,7 +23,9 @@ target_compile_definitions(denodo_arrow_flight_connector
         PUBLIC PRESTO_ENABLE_ARROW_FLIGHT_CONNECTOR)
 
 target_link_libraries(
-        denodo_arrow_flight_connector velox_connector ArrowFlight::arrow_flight_shared
+        denodo_arrow_flight_connector velox_connector
+        ArrowFlight::arrow_flight_shared
+        ArrowFlightSql::arrow_flight_sql_shared
         presto_flight_connector_utils presto_flight_connector_auth)
 
 if(PRESTO_ENABLE_TESTING)

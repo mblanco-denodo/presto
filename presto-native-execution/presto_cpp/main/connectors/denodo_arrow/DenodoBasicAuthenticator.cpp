@@ -12,7 +12,6 @@
  * limitations under the License.
  */
 #include "presto_cpp/main/connectors/denodo_arrow/DenodoBasicAuthenticator.h"
-#include "presto_cpp/main/connectors/denodo_arrow/DenodoArrowFlightConfig.h"
 
 #include <arrow/flight/middleware.h>
 #include <folly/base64.h>
@@ -52,7 +51,5 @@ void DenodoBasicAuthenticator::populateAuthenticationCallHeaders(
     DenodoArrowFlightSqlConnectionConstants::authorizationKey,
     DenodoArrowFlightSqlConnectionConstants::basicAuthenticationKey +
     base64EncodedUsernameAndPassword);
-  LOG(INFO) << "Writing basic authentication headers for user '" << username_ <<
-    "' in query: '" << getQueryContext()->queryId() << "'";
 }
 } // namespace facebook presto

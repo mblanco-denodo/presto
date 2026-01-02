@@ -27,9 +27,13 @@ DenodoArrowPrestoToVeloxConnector::toVeloxSplit(
       dynamic_cast<const protocol::denodo_arrow::DenodoArrowSplit*>(connectorSplit);
   VELOX_CHECK_NOT_NULL(
       arrowSplit, "Unexpected split type {}", connectorSplit->_type);
-  LOG(INFO) << "toVeloxSplit with executionIdentifier: " << arrowSplit->executionIdentifier;
-  return std::make_unique<DenodoArrowFlightSplit>(
-      catalogId, arrowSplit->flightEndpointBytes, arrowSplit->executionIdentifier);
+  //LOG(INFO) << "toVeloxSplit with executionIdentifier: " << arrowSplit->executionIdentifier;
+  DenodoArrowSplitData denodoArrowSplitData =
+    DenodoArrowSplitData(
+      arrowSplit->denodoArrowSplitData.vqlQuery,
+      arrowSplit->denodoArrowSplitData.identityIdentifier);
+  return std::make_unique<DenodoArrowSplit>(
+      catalogId, arrowSplit->flightEndpointBytes, denodoArrowSplitData);
 }
 
 std::unique_ptr<velox::connector::ColumnHandle>

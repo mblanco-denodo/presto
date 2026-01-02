@@ -38,3 +38,4 @@ JavaClasses:
   - presto-base-arrow-flight/src/main/java/com/facebook/plugin/arrow/ArrowTableHandle.java
   - presto-base-arrow-flight/src/main/java/com/facebook/plugin/arrow/ArrowTableLayoutHandle.java
   - presto-denodo-arrow-flight/src/main/java/com/facebook/presto/plugin/denodo/arrow/split/DenodoArrowSplit.java
+  - presto-denodo-arrow-flight/src/main/java/com/facebook/presto/plugin/denodo/arrow/split/DenodoArrowSplitData.java

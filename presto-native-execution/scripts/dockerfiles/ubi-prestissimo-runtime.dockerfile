@@ -11,7 +11,7 @@
 # limitations under the License.
 
 ARG DEPENDENCY_IMAGE=presto/prestissimo-dependency-arrow-flight-sql:centos9
-ARG BASE_IMAGE=quay.io/centos/centos:stream9
+ARG BASE_IMAGE=registry.access.redhat.com/ubi9-minimal:latest
 FROM ${DEPENDENCY_IMAGE} as prestissimo-image
 
 ARG OSNAME=centos
@@ -47,5 +47,7 @@ COPY --chmod=0775 --from=prestissimo-image /runtime-libraries/* /usr/lib64/prest
 COPY --chmod=0755 ./etc /opt/presto-server/etc
 COPY --chmod=0775 ./entrypoint.sh /opt/entrypoint.sh
 RUN echo "/usr/lib64/prestissimo-libs" > /etc/ld.so.conf.d/prestissimo.conf && ldconfig
+
+RUN microdnf install -y tzdata
 
 ENTRYPOINT ["/opt/entrypoint.sh"]

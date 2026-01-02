@@ -179,6 +179,33 @@ void from_json(const json& j, ArrowTableLayoutHandle& p) {
 }
 } // namespace facebook::presto::protocol::denodo_arrow
 namespace facebook::presto::protocol::denodo_arrow {
+
+void to_json(json& j, const DenodoArrowSplitData& p) {
+  j = json::object();
+  to_json_key(
+      j, "vqlQuery", p.vqlQuery, "DenodoArrowSplitData", "String", "vqlQuery");
+  to_json_key(
+      j,
+      "identityIdentifier",
+      p.identityIdentifier,
+      "DenodoArrowSplitData",
+      "String",
+      "identityIdentifier");
+}
+
+void from_json(const json& j, DenodoArrowSplitData& p) {
+  from_json_key(
+      j, "vqlQuery", p.vqlQuery, "DenodoArrowSplitData", "String", "vqlQuery");
+  from_json_key(
+      j,
+      "identityIdentifier",
+      p.identityIdentifier,
+      "DenodoArrowSplitData",
+      "String",
+      "identityIdentifier");
+}
+} // namespace facebook::presto::protocol::denodo_arrow
+namespace facebook::presto::protocol::denodo_arrow {
 DenodoArrowSplit::DenodoArrowSplit() noexcept {
   _type = "denodo-arrow";
 }
@@ -204,11 +231,11 @@ void to_json(json& j, const DenodoArrowSplit& p) {
       "flightEndpointBytes");
   to_json_key(
       j,
-      "executionIdentifier",
-      p.executionIdentifier,
+      "denodoArrowSplitData",
+      p.denodoArrowSplitData,
       "DenodoArrowSplit",
-      "String",
-      "executionIdentifier");
+      "DenodoArrowSplitData",
+      "denodoArrowSplitData");
 }
 
 void from_json(const json& j, DenodoArrowSplit& p) {
@@ -231,10 +258,10 @@ void from_json(const json& j, DenodoArrowSplit& p) {
       "flightEndpointBytes");
   from_json_key(
       j,
-      "executionIdentifier",
-      p.executionIdentifier,
+      "denodoArrowSplitData",
+      p.denodoArrowSplitData,
       "DenodoArrowSplit",
-      "String",
-      "executionIdentifier");
+      "DenodoArrowSplitData",
+      "denodoArrowSplitData");
 }
 } // namespace facebook::presto::protocol::denodo_arrow

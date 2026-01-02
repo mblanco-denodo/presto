@@ -97,6 +97,26 @@
     "json_key": "denodo-arrow"
   },
   {
+    "class_name": "DenodoArrowSplitData",
+    "struct": true,
+    "fields": [
+      {
+        "field_type": "String",
+        "field_name": "vqlQuery",
+        "field_text": "String",
+        "_N": 1,
+        "field_local": true
+      },
+      {
+        "field_type": "String",
+        "field_name": "identityIdentifier",
+        "field_text": "String",
+        "_N": 2,
+        "field_local": true
+      }
+    ]
+  },
+  {
     "class_name": "DenodoArrowSplit",
     "struct": true,
     "fields": [
@@ -122,9 +142,9 @@
         "field_local": true
       },
       {
-        "field_type": "String",
-        "field_name": "executionIdentifier",
-        "field_text": "String",
+        "field_type": "DenodoArrowSplitData",
+        "field_name": "denodoArrowSplitData",
+        "field_text": "DenodoArrowSplitData",
         "_N": 4,
         "field_local": true
       }

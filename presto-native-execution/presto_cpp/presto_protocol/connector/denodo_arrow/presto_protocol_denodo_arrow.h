@@ -79,11 +79,19 @@ void to_json(json& j, const ArrowTableLayoutHandle& p);
 void from_json(const json& j, ArrowTableLayoutHandle& p);
 } // namespace facebook::presto::protocol::denodo_arrow
 namespace facebook::presto::protocol::denodo_arrow {
+struct DenodoArrowSplitData {
+  String vqlQuery = {};
+  String identityIdentifier = {};
+};
+void to_json(json& j, const DenodoArrowSplitData& p);
+void from_json(const json& j, DenodoArrowSplitData& p);
+} // namespace facebook::presto::protocol::denodo_arrow
+namespace facebook::presto::protocol::denodo_arrow {
 struct DenodoArrowSplit : public ConnectorSplit {
   String schemaName = {};
   String tableName = {};
   String flightEndpointBytes = {};
-  String executionIdentifier = {};
+  DenodoArrowSplitData denodoArrowSplitData = {};
 
   DenodoArrowSplit() noexcept;
 };

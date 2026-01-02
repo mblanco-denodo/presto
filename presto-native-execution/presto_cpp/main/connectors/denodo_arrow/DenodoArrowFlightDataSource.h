@@ -15,6 +15,7 @@
 
 #include "presto_cpp/main/connectors/arrow_flight/ArrowFlightConnector.h"
 #include "presto_cpp/main/connectors/arrow_flight/auth/Authenticator.h"
+#include "presto_cpp/main/connectors/denodo_arrow/DenodoArrowFlightConfig.h"
 #include "velox/connectors/Connector.h"
 
 namespace arrow {
@@ -27,18 +28,28 @@ class Location;
 
 namespace facebook::presto {
 
-struct DenodoArrowFlightSplit : public ArrowFlightSplit {
+struct DenodoArrowSplitData {
+  /// @param vqlQuery VQL query to send to VDP through arrow flight
+  DenodoArrowSplitData(
+    const std::string& vqlQuery,
+    const std::string& identity) :
+  vqlQuery_(vqlQuery), identity_(identity){}
+  const std::string vqlQuery_;
+  const std::string identity_;
+};
+
+struct DenodoArrowSplit : public ArrowFlightSplit {
   /// @param connectorId
   /// @param flightEndpointBytes Base64 Serialized `FlightEndpoint`
   /// @param executionIdentifier String that identifies the query execution
-  DenodoArrowFlightSplit(
+  DenodoArrowSplit(
       const std::string& connectorId,
       const std::string& flightEndpointBytes,
-      const std::string& executionIdentifier)
+      const DenodoArrowSplitData& denodoArrowSplitData)
       : ArrowFlightSplit(connectorId, flightEndpointBytes),
-        executionIdentifier_(executionIdentifier) {}
+        denodoArrowSplitData_(denodoArrowSplitData){}
 
-  const std::string executionIdentifier_;
+  const DenodoArrowSplitData denodoArrowSplitData_;
 };
 
 class DenodoArrowFlightDataSource : public ArrowFlightDataSource {
@@ -52,9 +63,43 @@ public:
       const std::shared_ptr<arrow::flight::FlightClientOptions>& clientOpts);
   void addSplit(
       std::shared_ptr<velox::connector::ConnectorSplit> split) override;
+
+  std::optional<velox::RowVectorPtr> next(
+      uint64_t size,
+      velox::ContinueFuture& /* unused */) override;
+
+  void addDynamicFilter(
+      velox::column_index_t outputChannel,
+      const std::shared_ptr<velox::common::Filter>& filter) override {
+    VELOX_UNSUPPORTED("Arrow Flight connector doesn't support dynamic filters");
+  }
+
+  uint64_t getCompletedBytes() override {
+    return completedBytes_;
+  }
+
+  uint64_t getCompletedRows() override {
+    return completedRows_;
+  }
+
+  std::unordered_map<std::string, velox::RuntimeCounter> runtimeStats()
+      override {
+    return {};
+  }
+
 private:
+  velox::RowVectorPtr projectOutputColumns(
+      const std::shared_ptr<arrow::RecordBatch>& input);
+
+  velox::RowTypePtr outputType_;
+  std::vector<std::string> columnMapping_;
+  std::unique_ptr<arrow::flight::FlightStreamReader> currentReader_;
+  uint64_t completedRows_ = 0;
+  uint64_t completedBytes_ = 0;
   std::shared_ptr<Authenticator> authenticator_;
   const velox::connector::ConnectorQueryCtx* connectorQueryCtx_;
+  const std::shared_ptr<ArrowFlightConfig> flightConfig_;
+  const std::shared_ptr<arrow::flight::FlightClientOptions> clientOpts_;
 };
 
 } // namespace facebook::presto

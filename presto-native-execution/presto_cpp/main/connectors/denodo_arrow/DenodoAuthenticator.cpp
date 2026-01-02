@@ -43,13 +43,14 @@ void DenodoAuthenticator::authenticateClient(
     std::unique_ptr<arrow::flight::FlightClient>& client,
     const velox::config::ConfigBase* sessionProperties,
     arrow::flight::AddCallHeaders& headerWriter) {
+  // todo remove getQueryContext()->queryId
   headerWriter.AddHeader(
     DenodoArrowFlightSqlConnectionConstants::xForwardedUserAgentKey,
     userAgent_);
   LOG(INFO) << "mppQueryId + eId: " << getQueryContext()->queryId() + executionIdentifier_;
   headerWriter.AddHeader(
     DenodoArrowFlightSqlConnectionConstants::mppQueryIdKey,
-    queryId_ + executionIdentifier_);
+    executionIdentifier_);
   if (!timePrecision_.empty()) {
     headerWriter.AddHeader(
       DenodoArrowFlightSqlConnectionConstants::timePrecisionKey,

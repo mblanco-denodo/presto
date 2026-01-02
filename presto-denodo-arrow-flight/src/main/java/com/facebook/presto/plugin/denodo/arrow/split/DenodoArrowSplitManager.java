@@ -21,13 +21,12 @@ import com.facebook.presto.spi.ConnectorTableLayoutHandle;
 import com.facebook.presto.spi.FixedSplitSource;
 import com.facebook.presto.spi.connector.ConnectorTransactionHandle;
 import jakarta.inject.Inject;
-import org.apache.arrow.flight.FlightInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import static com.google.common.collect.ImmutableList.toImmutableList;
 import static java.util.Objects.requireNonNull;
 
 public class DenodoArrowSplitManager
@@ -57,17 +56,30 @@ public class DenodoArrowSplitManager
             executionIdentifier = Integer.toString(this.counter.getValue());
             this.counter.increment();
         }
-        FlightInfo flightInfo = clientHandler.getFlightInfoForTableScan(session, tableLayoutHandle, executionIdentifier);
-        log.info("sending split request with query + eId: {}", session.getQueryId() + '-' + executionIdentifier);
-        List<DenodoArrowSplit> splits = flightInfo.getEndpoints()
-                .stream()
-                .map(info -> new DenodoArrowSplit(
-                    tableHandle.getSchema(),
-                    tableHandle.getTable(),
-                    info.serialize().array(),
-                    // the execution identifier is passed down on the split so that it can be communicated to the worker
-                    executionIdentifier))
-                .collect(toImmutableList());
+        //FlightInfo flightInfo = clientHandler.getFlightInfoForTableScan(session, tableLayoutHandle, executionIdentifier);
+        //log.info("sending split request with query + eId: {}", session.getQueryId() + '-' + executionIdentifier);
+        //List<DenodoArrowSplit> splits = flightInfo.getEndpoints()
+        //        .stream()
+        //        .map(info -> new DenodoArrowSplit(
+        //            tableHandle.getSchema(),
+        //            tableHandle.getTable(),
+        //            info.serialize().array(),
+        //            // the execution identifier is passed down on the split so that it can be communicated to the worker
+        //            executionIdentifier))
+        //        .collect(toImmutableList());
+        //return new FixedSplitSource(splits);
+        String identity = session.getQueryId() + '-' + executionIdentifier;
+        DenodoArrowSplitData splitData = clientHandler.getDenodoArrowSplitData(tableLayoutHandle, identity);
+        DenodoArrowSplit split = new DenodoArrowSplit(
+                tableHandle.getSchema(),
+                tableHandle.getTable(),
+                // this will be the endpoint info if we processed part of the query from the coordinator
+                // we process everything in the native worker, so we pass an empty byte array so that the
+                // protocol deserialization layer does not fail
+                new byte[0],
+                splitData);
+        List<DenodoArrowSplit> splits = new ArrayList<>(1);
+        splits.add(split);
         return new FixedSplitSource(splits);
     }
 }

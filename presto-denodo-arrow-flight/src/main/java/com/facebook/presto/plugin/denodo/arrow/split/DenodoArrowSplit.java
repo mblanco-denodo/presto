@@ -18,22 +18,22 @@ import jakarta.annotation.Nullable;
 public class DenodoArrowSplit
             extends ArrowSplit
 {
-    private final String executionIdentifier;
+    private final DenodoArrowSplitData denodoArrowSplitData;
 
     @JsonCreator
     public DenodoArrowSplit(
             @JsonProperty("schemaName") @Nullable String schemaName,
             @JsonProperty("tableName") String tableName,
             @JsonProperty("flightEndpointBytes") byte[] flightEndpointBytes,
-            @JsonProperty("executionIdentifier") @Nullable String executionIdentifier)
+            @JsonProperty("denodoArrowSplitData") @Nullable DenodoArrowSplitData denodoArrowSplitData)
     {
         super(schemaName, tableName, flightEndpointBytes);
-        this.executionIdentifier = executionIdentifier;
+        this.denodoArrowSplitData = denodoArrowSplitData;
     }
 
     @JsonProperty
-    public String getExecutionIdentifier()
+    public DenodoArrowSplitData getDenodoArrowSplitData()
     {
-        return executionIdentifier;
+        return this.denodoArrowSplitData;
     }
 }

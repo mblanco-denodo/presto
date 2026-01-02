@@ -13,14 +13,17 @@
  */
 package com.facebook.presto.plugin.denodo.arrow;
 
+import com.facebook.plugin.arrow.ArrowColumnHandle;
 import com.facebook.plugin.arrow.ArrowException;
 import com.facebook.plugin.arrow.ArrowTableHandle;
 import com.facebook.plugin.arrow.ArrowTableLayoutHandle;
 import com.facebook.plugin.arrow.BaseArrowFlightClientHandler;
+import com.facebook.presto.common.type.Type;
 import com.facebook.presto.plugin.denodo.arrow.auth.DenodoAuthenticatorFactory;
 import com.facebook.presto.plugin.denodo.arrow.auth.DenodoCallOptions;
 import com.facebook.presto.plugin.denodo.arrow.cache.DenodoArrowFlightMetadataCache;
 import com.facebook.presto.plugin.denodo.arrow.exception.DenodoArrowFlightRuntimeException;
+import com.facebook.presto.plugin.denodo.arrow.split.DenodoArrowSplitData;
 import com.facebook.presto.plugin.denodo.arrow.vdp.VdpSqlBuilder;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.SchemaTableName;
@@ -40,6 +43,7 @@ import org.apache.arrow.flight.sql.FlightSqlClient;
 import org.apache.arrow.flight.sql.FlightSqlUtils;
 import org.apache.arrow.flight.sql.impl.FlightSql;
 import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.slf4j.Logger;
@@ -280,14 +284,38 @@ public class DenodoArrowFlightClientHandler
             FlightSql.ActionCreatePreparedStatementResult preparedStatementResult =
                     Any.parseFrom(preparedStatementResults.next().getBody())
                             .unpack(FlightSql.ActionCreatePreparedStatementResult.class);
-            return FlightDescriptor
+            FlightDescriptor descriptor = FlightDescriptor
                     .command(Any.pack(FlightSql.CommandPreparedStatementQuery.newBuilder()
                                     .setPreparedStatementHandle(preparedStatementResult.getPreparedStatementHandle())
                                     .build())
                             .toByteArray());
+            FlightInfo info = client.getInfo(descriptor, callOptions);
+            FlightStream stream = client.getStream(info.getEndpoints().get(0).getTicket(), callOptions);
+            // Create blocks from the loaded Arrow record batch
+            List<FieldVector> vectors = stream.getRoot().getFieldVectors();
+            List<ArrowColumnHandle> columnHandles = tableLayoutHandle.getColumnHandles();
+            for (int columnIndex = 0; columnIndex < columnHandles.size(); columnIndex++) {
+                FieldVector vector = vectors.get(columnIndex);
+                Type type = columnHandles.get(columnIndex).getColumnType();
+                log.error("found vector '{}' with type '{}' in arrow stream", vector.toString(), type.toString());
+            }
+            return descriptor;
         }
         catch (Exception e) {
             throw new DenodoArrowFlightRuntimeException("Cannot create PreparedStatement", e);
         }
+    }
+
+    public DenodoArrowSplitData getDenodoArrowSplitData(ArrowTableLayoutHandle tableLayoutHandle,
+            String peerIdentity)
+    {
+        ArrowTableHandle tableHandle = tableLayoutHandle.getTable();
+        String query = new VdpSqlBuilder().buildSql(
+                tableHandle.getSchema(),
+                tableHandle.getTable(),
+                tableLayoutHandle.getColumnHandles(), ImmutableMap.of(),
+                tableLayoutHandle.getTupleDomain());
+        query = query + String.format(" CONTEXT ('i18n'='%s')", this.config.getConnectionI18n());
+        return new DenodoArrowSplitData(query, peerIdentity);
     }
 }
