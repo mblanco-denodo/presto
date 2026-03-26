@@ -61,6 +61,7 @@ import org.apache.parquet.internal.filter2.columnindex.ColumnIndexStore;
 import org.apache.parquet.io.ColumnIO;
 import org.apache.parquet.io.MessageColumnIO;
 import org.apache.parquet.schema.GroupType;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.joda.time.DateTimeZone;
@@ -83,6 +84,7 @@ import static com.facebook.presto.common.type.StandardTypes.CHAR;
 import static com.facebook.presto.common.type.StandardTypes.DATE;
 import static com.facebook.presto.common.type.StandardTypes.DECIMAL;
 import static com.facebook.presto.common.type.StandardTypes.INTEGER;
+import static com.facebook.presto.common.type.StandardTypes.JSON;
 import static com.facebook.presto.common.type.StandardTypes.MAP;
 import static com.facebook.presto.common.type.StandardTypes.REAL;
 import static com.facebook.presto.common.type.StandardTypes.ROW;
@@ -442,6 +444,8 @@ public class ParquetPageSourceFactory
                     GroupType bagGroupType = bagType.asGroupType();
                     return checkSchemaMatch(bagGroupType, type.getTypeParameters().get(0)) ||
                             (bagGroupType.getFields().size() == 1 && checkSchemaMatch(bagGroupType.getFields().get(0), type.getTypeParameters().get(0)));
+                case JSON:
+                    return parquetType.asGroupType().getLogicalTypeAnnotation() instanceof LogicalTypeAnnotation.VariantLogicalTypeAnnotation;
                 default:
                     return false;
             }
