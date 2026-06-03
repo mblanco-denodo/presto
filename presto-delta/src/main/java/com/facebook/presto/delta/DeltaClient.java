@@ -13,7 +13,9 @@
  */
 package com.facebook.presto.delta;
 
+import com.facebook.airlift.log.Logger;
 import com.facebook.presto.common.type.TypeSignature;
+import com.facebook.presto.delta.cache.DeltaMetadataCache;
 import com.facebook.presto.hive.HdfsContext;
 import com.facebook.presto.hive.HdfsEnvironment;
 import com.facebook.presto.spi.ConnectorSession;
@@ -41,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static com.facebook.presto.delta.DeltaTable.DataFormat.PARQUET;
@@ -54,13 +57,48 @@ import static java.util.Objects.requireNonNull;
  */
 public class DeltaClient
 {
+    private static final Logger log = Logger.get(DeltaClient.class);
     private static final String TABLE_NOT_FOUND_ERROR_TEMPLATE = "Delta table (%s.%s) no longer exists.";
     private final HdfsEnvironment hdfsEnvironment;
+    private final DeltaMetadataCache<String, DeltaTable> deltaTableCache;
 
     @Inject
     public DeltaClient(HdfsEnvironment hdfsEnvironment)
     {
         this.hdfsEnvironment = requireNonNull(hdfsEnvironment, "hdfsEnvironment is null");
+        this.deltaTableCache = new DeltaMetadataCache<>(
+                (key, connectorSession, params) -> fetchDeltaTable(
+                        (DeltaConfig) params[0],
+                        (ConnectorSession) params[1],
+                        (SchemaTableName) params[2],
+                        (String) params[3],
+                        (Optional<Long>) params[4],
+                        (Optional<Long>) params[5]));
+    }
+
+    public DeltaTable fetchDeltaTable(
+            DeltaConfig config,
+            ConnectorSession session,
+            SchemaTableName schemaTableName,
+            String tableLocation,
+            Optional<Long> snapshotId,
+            Optional<Long> snapshotAsOfTimestampMillis)
+    {
+        Path location = new Path(tableLocation);
+        Optional<Engine> deltaEngine = loadDeltaEngine(session, location, schemaTableName);
+        if (!deltaEngine.isPresent()) {
+            return null;
+        }
+
+        Table deltaTable = loadDeltaTable(location.toString(), deltaEngine.get());
+        Snapshot snapshot = getSnapshot(deltaTable, deltaEngine.get(), schemaTableName, snapshotId,
+                snapshotAsOfTimestampMillis);
+        return new DeltaTable(
+                schemaTableName.getSchemaName(),
+                schemaTableName.getTableName(),
+                tableLocation,
+                Optional.of(snapshot.getVersion()), // lock the snapshot version
+                getSchema(config, schemaTableName, deltaEngine.get(), snapshot));
     }
 
     /**
@@ -81,21 +119,13 @@ public class DeltaClient
             Optional<Long> snapshotId,
             Optional<Long> snapshotAsOfTimestampMillis)
     {
-        Path location = new Path(tableLocation);
-        Optional<Engine> deltaEngine = loadDeltaEngine(session, location, schemaTableName);
-        if (!deltaEngine.isPresent()) {
-            return Optional.empty();
+        try {
+            return Optional.ofNullable(this.deltaTableCache.get(session.getQueryId(), session, config, session, schemaTableName, tableLocation, snapshotId, snapshotAsOfTimestampMillis));
         }
-
-        Table deltaTable = loadDeltaTable(location.toString(), deltaEngine.get());
-        Snapshot snapshot = getSnapshot(deltaTable, deltaEngine.get(), schemaTableName, snapshotId,
-                snapshotAsOfTimestampMillis);
-        return Optional.of(new DeltaTable(
-                schemaTableName.getSchemaName(),
-                schemaTableName.getTableName(),
-                tableLocation,
-                Optional.of(snapshot.getVersion()), // lock the snapshot version
-                getSchema(config, schemaTableName, deltaEngine.get(), snapshot)));
+        catch (ExecutionException e) {
+            log.error("Error retrieving schemas from cache", e);
+            return Optional.ofNullable(fetchDeltaTable(config, session, schemaTableName, tableLocation, snapshotId, snapshotAsOfTimestampMillis));
+        }
     }
 
     private Snapshot getSnapshot(
