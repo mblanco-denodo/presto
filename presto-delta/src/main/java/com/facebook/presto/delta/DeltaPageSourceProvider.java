@@ -125,6 +125,31 @@ public class DeltaPageSourceProvider
     private final FileFormatDataSourceStats fileFormatDataSourceStats;
     private final DeltaConfig deltaConfig;
 
+    /**
+     * Wrapper class to return both the page source and metadata about row group pruning
+     */
+    private static class ParquetPageSourceWithStartingOffset
+    {
+        private final ConnectorPageSource pageSource;
+        private final long startingRowOffset;
+
+        public ParquetPageSourceWithStartingOffset(ConnectorPageSource pageSource, long startingRowOffset)
+        {
+            this.pageSource = pageSource;
+            this.startingRowOffset = startingRowOffset;
+        }
+
+        public ConnectorPageSource getPageSource()
+        {
+            return pageSource;
+        }
+
+        public long getStartingRowOffset()
+        {
+            return startingRowOffset;
+        }
+    }
+
     @Inject
     public DeltaPageSourceProvider(
             HdfsEnvironment hdfsEnvironment,
@@ -167,7 +192,7 @@ public class DeltaPageSourceProvider
                 .filter(columnHandle -> columnHandle.getColumnType() != PARTITION)
                 .collect(Collectors.toList());
 
-        ConnectorPageSource dataPageSource = createParquetPageSource(
+        ParquetPageSourceWithStartingOffset parquetPageSourceWithMetadata = createParquetPageSource(
                 hdfsEnvironment,
                 session,
                 hdfsEnvironment.getConfiguration(hdfsContext, filePath),
@@ -198,8 +223,9 @@ public class DeltaPageSourceProvider
         return new DeltaPageSource(
                 deltaColumnHandles,
                 convertPartitionValues(deltaColumnHandles, deltaSplit.getPartitionValues()),
-                dataPageSource,
-                deletedRows);
+                parquetPageSourceWithMetadata.getPageSource(),
+                deletedRows,
+                parquetPageSourceWithMetadata.getStartingRowOffset());
     }
 
     /**
@@ -222,7 +248,7 @@ public class DeltaPageSourceProvider
                         }));
     }
 
-    private static ConnectorPageSource createParquetPageSource(
+    private static ParquetPageSourceWithStartingOffset createParquetPageSource(
             HdfsEnvironment hdfsEnvironment,
             ConnectorSession session,
             Configuration configuration,
@@ -293,12 +319,20 @@ public class DeltaPageSourceProvider
             final ParquetDataSource finalDataSource = dataSource;
             ImmutableList.Builder<BlockMetaData> blocks = ImmutableList.builder();
             List<ColumnIndexStore> blockIndexStores = new ArrayList<>();
+            long startingRowOffset = 0;
+            long currentRowOffset = 0;
+            boolean foundFirstBlock = false;
             for (BlockMetaData block : footerBlocks.build()) {
                 Optional<ColumnIndexStore> columnIndexStore = getColumnIndexStore(parquetPredicate, finalDataSource, block, descriptorsByPath, false);
                 if (predicateMatches(parquetPredicate, block, finalDataSource, descriptorsByPath, parquetTupleDomain, columnIndexStore, false, Optional.of(session.getWarningCollector()))) {
+                    if (!foundFirstBlock) {
+                        startingRowOffset = currentRowOffset;
+                        foundFirstBlock = true;
+                    }
                     blocks.add(block);
                     blockIndexStores.add(columnIndexStore.orElse(null));
                 }
+                currentRowOffset += block.getRowCount();
             }
             MessageColumnIO messageColumnIO = getColumnIO(fileSchema, requestedSchema);
             ParquetReader parquetReader = new ParquetReader(
@@ -346,7 +380,8 @@ public class DeltaPageSourceProvider
                     fieldsBuilder.add(Optional.empty());
                 }
             }
-            return new ParquetPageSource(parquetReader, typesBuilder.build(), fieldsBuilder.build(), namesBuilder.build(), new RuntimeStats());
+            ParquetPageSource parquetPageSource = new ParquetPageSource(parquetReader, typesBuilder.build(), fieldsBuilder.build(), namesBuilder.build(), new RuntimeStats());
+            return new ParquetPageSourceWithStartingOffset(parquetPageSource, startingRowOffset);
         }
         catch (Exception exception) {
             try {
