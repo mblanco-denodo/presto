@@ -79,7 +79,7 @@ public class DeltaSplitManager
             this.session = requireNonNull(session, "session is null");
             this.deltaTable = deltaTableHandle.getTable().getDeltaTable();
             this.rowIterator = DeltaExpressionUtils.iterateWithPartitionPruning(
-                    deltaClient.listFiles(session, deltaTable),
+                    deltaClient.listFiles(session, deltaConfig, deltaTableHandle, typeManager),
                     deltaTableHandle.getPredicate(),
                     typeManager);
             this.maxBatchSize = deltaConfig.getMaxSplitsBatchSize();
@@ -105,7 +105,8 @@ public class DeltaSplitManager
                         getNodeSelectionStrategy(session)));
                 currentSplitCount++;
             }
-
+            // TODO REMOVE THIS
+            System.out.println("DeltaSplitSource: " + currentSplitCount + " splits created");
             return completedFuture(new ConnectorSplitBatch(splitBuilder.build(), !rowIterator.hasNext()));
         }
 
