@@ -1,0 +1,162 @@
+/*
+ * Copyright (c) 2026. DENODO Technologies.
+ * http://www.denodo.com
+ * All rights reserved.
+ *
+ * This software is the confidential and proprietary information of DENODO
+ * Technologies ("Confidential Information"). You shall not disclose such
+ * Confidential Information and shall use it only in accordance with the terms
+ * of the license agreement you entered into with DENODO.
+ */
+package com.facebook.presto.delta.rule;
+
+import com.facebook.presto.common.Subfield;
+import com.facebook.presto.common.predicate.TupleDomain;
+import com.facebook.presto.hive.HiveColumnHandle;
+import com.facebook.presto.hive.HiveMetadata;
+import com.facebook.presto.hive.HivePartitionManager;
+import com.facebook.presto.hive.HivePartitionResult;
+import com.facebook.presto.hive.HiveTableHandle;
+import com.facebook.presto.hive.HiveTableLayoutHandle;
+import com.facebook.presto.hive.metastore.MetastoreContext;
+import com.facebook.presto.hive.metastore.SemiTransactionalHiveMetastore;
+import com.facebook.presto.hive.metastore.Table;
+import com.facebook.presto.hive.rule.BaseSubfieldExtractionRewriter;
+import com.facebook.presto.spi.ColumnHandle;
+import com.facebook.presto.spi.ConnectorSession;
+import com.facebook.presto.spi.ConnectorTableHandle;
+import com.facebook.presto.spi.ConnectorTableLayoutHandle;
+import com.facebook.presto.spi.Constraint;
+import com.facebook.presto.spi.SchemaTableName;
+import com.facebook.presto.spi.TableHandle;
+import com.facebook.presto.spi.TableNotFoundException;
+import com.facebook.presto.spi.connector.ConnectorMetadata;
+import com.facebook.presto.spi.function.FunctionMetadataManager;
+import com.facebook.presto.spi.function.StandardFunctionResolution;
+import com.facebook.presto.spi.plan.PlanNodeIdAllocator;
+import com.facebook.presto.spi.relation.DomainTranslator;
+import com.facebook.presto.spi.relation.RowExpression;
+import com.facebook.presto.spi.relation.RowExpressionService;
+import com.google.common.base.Functions;
+
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+
+import static com.facebook.presto.hive.metastore.MetastoreUtil.getMetastoreHeaders;
+import static com.facebook.presto.hive.metastore.MetastoreUtil.isUserDefinedTypeEncodingEnabled;
+import static com.facebook.presto.hive.rule.FilterPushdownUtils.getDomainPredicate;
+import static com.facebook.presto.hive.rule.FilterPushdownUtils.getPredicateColumnNames;
+import static com.facebook.presto.hive.rule.HiveFilterPushdown.createTableLayoutString;
+import static com.facebook.presto.hive.rule.HiveFilterPushdown.pruneColumnComments;
+import static com.google.common.collect.ImmutableMap.toImmutableMap;
+import static java.util.Objects.requireNonNull;
+
+public class SubfieldExtractionRewriter
+        extends BaseSubfieldExtractionRewriter
+{
+    private final HivePartitionManager partitionManager;
+
+    public SubfieldExtractionRewriter(
+            ConnectorSession session,
+            PlanNodeIdAllocator idAllocator,
+            RowExpressionService rowExpressionService,
+            StandardFunctionResolution functionResolution,
+            FunctionMetadataManager functionMetadataManager,
+            HivePartitionManager partitionManager,
+            Function<TableHandle, ConnectorMetadata> transactionToMetadata)
+    {
+        super(session, idAllocator, rowExpressionService, functionResolution, functionMetadataManager, transactionToMetadata);
+
+        this.partitionManager = requireNonNull(partitionManager, "partitionManager is null");
+    }
+
+    @Override
+    public ConnectorPushdownFilterResult getConnectorPushdownFilterResult(
+            Map<String, ColumnHandle> columnHandles,
+            ConnectorMetadata metadata,
+            ConnectorSession session,
+            RemainingExpressions remainingExpressions,
+            DomainTranslator.ExtractionResult<Subfield> decomposedFilter,
+            RowExpression optimizedRemainingExpression,
+            Constraint<ColumnHandle> constraint,
+            Optional<ConnectorTableLayoutHandle> currentLayoutHandle,
+            ConnectorTableHandle tableHandle)
+    {
+        HivePartitionResult hivePartitionResult = partitionManager.getPartitions(((HiveMetadata) metadata).getMetastore(), tableHandle, constraint, session);
+
+        TupleDomain<ColumnHandle> unenforcedConstraint = hivePartitionResult.getUnenforcedConstraint();
+
+        TupleDomain<Subfield> domainPredicate = getDomainPredicate(decomposedFilter, unenforcedConstraint);
+
+        Set<String> predicateColumnNames = getPredicateColumnNames(optimizedRemainingExpression, domainPredicate);
+
+        Map<String, HiveColumnHandle> predicateColumns = predicateColumnNames.stream()
+                .map(columnHandles::get)
+                .map(HiveColumnHandle.class::cast)
+                .collect(toImmutableMap(HiveColumnHandle::getName, Functions.identity()));
+
+        HiveTableHandle hiveTableHandle = (HiveTableHandle) tableHandle;
+        SchemaTableName tableName = hiveTableHandle.getSchemaTableName();
+
+        SemiTransactionalHiveMetastore metastore = ((HiveMetadata) metadata).getMetastore();
+
+        MetastoreContext context = new MetastoreContext(
+                session.getIdentity(),
+                session.getQueryId(),
+                session.getClientInfo(),
+                session.getClientTags(),
+                session.getSource(),
+                getMetastoreHeaders(session),
+                isUserDefinedTypeEncodingEnabled(session),
+                metastore.getColumnConverterProvider(),
+                session.getWarningCollector(), session.getRuntimeStats());
+        Table table = metastore.getTable(context, hiveTableHandle)
+                .orElseThrow(() -> new TableNotFoundException(tableName));
+
+        String layoutString = createTableLayoutString(
+                session,
+                rowExpressionService,
+                tableName,
+                hivePartitionResult.getBucketHandle(),
+                hivePartitionResult.getBucketFilter(),
+                remainingExpressions.getRemainingExpression(),
+                domainPredicate);
+
+        Optional<Set<HiveColumnHandle>> requestedColumns = currentLayoutHandle.map(layout -> ((HiveTableLayoutHandle) layout).getRequestedColumns()).orElse(Optional.empty());
+
+        boolean appendRowNumber = currentLayoutHandle.map(layout -> ((HiveTableLayoutHandle) layout).isAppendRowNumberEnabled()).orElse(false);
+
+        return new ConnectorPushdownFilterResult(
+                metadata.getTableLayout(
+                        session,
+                        new HiveTableLayoutHandle.Builder()
+                                .setSchemaTableName(tableName)
+                                .setTablePath(table.getStorage().getLocation())
+                                .setPartitionColumns(hivePartitionResult.getPartitionColumns())
+                                .setDataColumns(pruneColumnComments(hivePartitionResult.getDataColumns()))
+                                .setTableParameters(hivePartitionResult.getTableParameters())
+                                .setDomainPredicate(domainPredicate)
+                                .setRemainingPredicate(remainingExpressions.getRemainingExpression())
+                                .setPredicateColumns(predicateColumns)
+                                .setPartitionColumnPredicate(hivePartitionResult.getEnforcedConstraint())
+                                .setPartitions(hivePartitionResult.getPartitions())
+                                .setBucketHandle(hivePartitionResult.getBucketHandle())
+                                .setBucketFilter(hivePartitionResult.getBucketFilter())
+                                .setPushdownFilterEnabled(true)
+                                .setLayoutString(layoutString)
+                                .setRequestedColumns(requestedColumns)
+                                .setPartialAggregationsPushedDown(false)
+                                .setAppendRowNumberEnabled(appendRowNumber)
+                                .setHiveTableHandle(hiveTableHandle)
+                                .build()),
+                remainingExpressions.getDynamicFilterExpression());
+    }
+
+    @Override
+    protected boolean isPushdownFilterSupported(ConnectorSession session, TableHandle tableHandle)
+    {
+        return true;
+    }
+}

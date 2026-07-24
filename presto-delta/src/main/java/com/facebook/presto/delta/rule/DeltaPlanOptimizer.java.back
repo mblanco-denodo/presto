@@ -1,0 +1,82 @@
+/*
+ * Copyright (c) 2026. DENODO Technologies.
+ * http://www.denodo.com
+ * All rights reserved.
+ *
+ * This software is the confidential and proprietary information of DENODO
+ * Technologies ("Confidential Information"). You shall not disclose such
+ * Confidential Information and shall use it only in accordance with the terms
+ * of the license agreement you entered into with DENODO.
+ */
+package com.facebook.presto.delta.rule;
+
+import com.facebook.presto.delta.DeltaMetadata;
+import com.facebook.presto.delta.transaction.DeltaTransactionManager;
+import com.facebook.presto.hive.HivePartitionManager;
+import com.facebook.presto.spi.ConnectorPlanOptimizer;
+import com.facebook.presto.spi.ConnectorSession;
+import com.facebook.presto.spi.TableHandle;
+import com.facebook.presto.spi.VariableAllocator;
+import com.facebook.presto.spi.connector.ConnectorMetadata;
+import com.facebook.presto.spi.function.FunctionMetadataManager;
+import com.facebook.presto.spi.function.StandardFunctionResolution;
+import com.facebook.presto.spi.plan.PlanNode;
+import com.facebook.presto.spi.plan.PlanNodeIdAllocator;
+import com.facebook.presto.spi.relation.RowExpressionService;
+
+import static com.facebook.presto.common.Utils.checkState;
+import static com.facebook.presto.spi.ConnectorPlanRewriter.rewriteWith;
+import static java.util.Objects.requireNonNull;
+
+public class DeltaPlanOptimizer
+        implements ConnectorPlanOptimizer
+{
+    private final RowExpressionService rowExpressionService;
+    private final StandardFunctionResolution functionResolution;
+    private final FunctionMetadataManager functionMetadataManager;
+    private final HivePartitionManager partitionManager;
+    private final DeltaTransactionManager transactionManager;
+
+    public DeltaPlanOptimizer(
+            RowExpressionService rowExpressionService,
+            StandardFunctionResolution functionResolution,
+            FunctionMetadataManager functionMetadataManager,
+            DeltaTransactionManager transactionManager,
+            HivePartitionManager typeManager)
+    {
+        this.rowExpressionService = requireNonNull(rowExpressionService, "rowExpressionService is null");
+        this.functionResolution = requireNonNull(functionResolution, "functionResolution is null");
+        this.functionMetadataManager = requireNonNull(functionMetadataManager, "functionMetadataManager is null");
+        this.transactionManager = requireNonNull(transactionManager, "transactionManager is null");
+        this.partitionManager = requireNonNull(typeManager, "typeManager is null");
+    }
+    @Override
+    public PlanNode optimize(PlanNode maxSubplan, ConnectorSession session, VariableAllocator variableAllocator, PlanNodeIdAllocator idAllocator)
+    {
+        if (!isPushdownFilterEnabled(session)) {
+            return maxSubplan;
+        }
+        return rewriteWith(new SubfieldExtractionRewriter(
+                session,
+                idAllocator,
+                rowExpressionService,
+                functionResolution,
+                functionMetadataManager,
+                partitionManager,
+                tableHandle -> getConnectorMetadata(transactionManager, tableHandle)),
+                maxSubplan);
+    }
+
+    private boolean isPushdownFilterEnabled(ConnectorSession session)
+    {
+        return true;
+    }
+
+    public static ConnectorMetadata getConnectorMetadata(DeltaTransactionManager transactionManager, TableHandle tableHandle)
+    {
+        requireNonNull(transactionManager, "transactionManager is null");
+        ConnectorMetadata metadata = transactionManager.get(tableHandle.getTransaction());
+        checkState(metadata instanceof DeltaMetadata, "metadata must be DeltaMetadata");
+        return metadata;
+    }
+}
