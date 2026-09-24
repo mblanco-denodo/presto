@@ -28,7 +28,6 @@ import io.delta.kernel.ScanBuilder;
 import io.delta.kernel.Snapshot;
 import io.delta.kernel.Table;
 import io.delta.kernel.clustering.ClusteringColumnInfo;
-import io.delta.kernel.data.ArrayValue;
 import io.delta.kernel.data.FilteredColumnarBatch;
 import io.delta.kernel.defaults.engine.DefaultEngine;
 import io.delta.kernel.engine.Engine;
@@ -274,11 +273,7 @@ public class DeltaClient
     private static List<DeltaColumn> getSchema(DeltaConfig config, SchemaTableName tableName, Snapshot snapshot)
     {
         // Extract partition columns directly from metadata without scanning files
-        Set<String> partitionColumns = new HashSet<>(0);
-        ArrayValue metadataPartitionColumns = snapshot.getMetadata().getPartitionColumns();
-        for (int i = 0; i < metadataPartitionColumns.getSize(); ++i) {
-            partitionColumns.add(metadataPartitionColumns.getElements().getString(i));
-        }
+        List<String> partitionColumns = snapshot.getPartitionColumnNames();
 
         // Extract clustering columns if no partitioning
         Set<String> clusterColumns = new HashSet<>(0);
@@ -300,13 +295,15 @@ public class DeltaClient
                             field.getName().toLowerCase(US);
                     TypeSignature prestoType = DeltaTypeUtils.convertDeltaDataTypePrestoDataType(tableName,
                             columnName, field.getDataType());
+                    String physicalName = DeltaColumnMetadataUtil.getPhysicalNameFromMetadata(field.getMetadata());
+                    String hiveParitioningColumnName = physicalName != null ? physicalName : columnName;
                     return new DeltaColumn(
                             DeltaColumnMetadataUtil.getColumnIdFromMetadata(field.getMetadata()),
-                            DeltaColumnMetadataUtil.getPhysicalNameFromMetadata(field.getMetadata()),
+                            physicalName,
                             columnName,
                             prestoType,
                             field.isNullable(),
-                            partitionColumns.contains(columnName),
+                            partitionColumns.contains(hiveParitioningColumnName),
                             clusterColumns.contains(columnName));
                 }).collect(Collectors.toList());
     }
